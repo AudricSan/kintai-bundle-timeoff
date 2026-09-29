@@ -11,6 +11,9 @@ $typeLabels = [
     'unpaid' => __('unpaid'), 'other' => __('other'),
 ];
 ?>
+<?php if ($timeoffCss = bundle_asset('timeoff', 'css/timeoff.css')): ?>
+<link rel="stylesheet" href="<?= $timeoffCss ?>">
+<?php endif; ?>
 <div class="page-header">
     <h2 class="page-header__title"><?= __('create_timeoff') ?></h2>
     <div class="page-header__actions">
