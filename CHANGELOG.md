@@ -8,6 +8,8 @@ Le schéma de version (X.Y.Z, canaux alpha/beta/main) est décrit dans
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-29
+
 ### Added
 
 - La soumission d'une demande de congé ne notifiait jamais les managers (contrairement à daily-report, feedback, shift-claim, notebook, qui le font tous) — ils ne l'apprenaient qu'en consultant `/admin/timeoff`. `EmployeeTimeoffController::storeTimeoff()` notifie désormais les membres du store détenant `timeoff.approve`, avec le type de congé et la plage de dates, lien vers `/admin/timeoff`.
