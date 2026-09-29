@@ -42,5 +42,6 @@ final class TimeOffBundle extends Bundle
     {
         $this->loadViewsFrom($this->getPath() . '/Views', 'timeoff');
         $this->loadRoutesFrom($this->getPath() . '/routes.php');
+        $this->loadAssetsFrom('public');
     }
 }
