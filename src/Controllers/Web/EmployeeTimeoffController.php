@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace kintai\Bundles\Installed\TimeOff\Controllers\Web;
 
+use kintai\Core\Auth\PermissionService;
 use kintai\Core\Exceptions\ForbiddenException;
 use kintai\Core\Repositories\StoreRepositoryInterface;
 use kintai\Core\Repositories\StoreUserRepositoryInterface;
 use kintai\Core\Repositories\TimeoffRequestRepositoryInterface;
+use kintai\Core\Repositories\UserRepositoryInterface;
 use kintai\Core\Request;
 use kintai\Core\Response;
 use kintai\Core\Services\AuditLogger;
+use kintai\Core\Services\NotificationService;
 use kintai\UI\Controller\Web\HasBaseUrl;
 use kintai\UI\Controller\Web\HasStoreFeatureCheck;
 use kintai\UI\ViewRenderer;
@@ -26,6 +29,9 @@ final class EmployeeTimeoffController
         private readonly StoreRepositoryInterface $stores,
         private readonly StoreUserRepositoryInterface $storeUsers,
         private readonly AuditLogger $auditLogger,
+        private readonly UserRepositoryInterface $users,
+        private readonly NotificationService $notifs,
+        private readonly PermissionService $permissions,
     ) {}
 
     public function timeoff(Request $request): Response
@@ -78,7 +84,44 @@ final class EmployeeTimeoffController
         $this->auditLogger->log($request, 'timeoff.created', 'timeoff_request', (int) ($savedTimeoff['id'] ?? 0), [
             'type' => $type, 'start' => $startDate, 'end' => $endDate,
         ], $storeId ?: null);
+
+        // Régression comblée : contrairement aux autres bundles (daily-report, feedback,
+        // shift-claim, notebook), la soumission d'une demande de congé ne prévenait
+        // jamais les managers — ils ne l'apprenaient qu'en consultant /admin/timeoff.
+        if ($storeId > 0) {
+            $this->notifyManagers($storeId, (int) ($savedTimeoff['id'] ?? 0), $userId, $type, $startDate, $endDate);
+        }
+
         return Response::redirect($this->base() . '/employee/timeoff?success=created');
+    }
+
+    /** Notifie les membres du store détenant timeoff.approve qu'une demande attend une décision. */
+    private function notifyManagers(int $storeId, int $referenceId, int $authorId, string $type, string $startDate, string $endDate): void
+    {
+        $recipients = [];
+        foreach ($this->storeUsers->findByStore($storeId) as $m) {
+            $uid = (int) $m['user_id'];
+            $candidate = $this->users->findById($uid);
+            if ($candidate !== null && $this->permissions->can($candidate, 'timeoff.approve', $storeId)) {
+                $recipients[] = $uid;
+            }
+        }
+        if ($recipients === []) {
+            return;
+        }
+
+        $author     = $this->users->findById($authorId);
+        $authorName = trim(($author['last_name'] ?? '') . ' ' . ($author['first_name'] ?? ''));
+        $authorName = $authorName !== '' ? $authorName : ('#' . $authorId);
+
+        $this->notifs->notifyMany(
+            $recipients,
+            'timeoff_submitted',
+            'notif_timeoff_submitted_body',
+            ['author' => $authorName, 'type' => __($type), 'start' => $startDate, 'end' => $endDate],
+            $referenceId,
+            '/admin/timeoff'
+        );
     }
 
     public function cancelTimeoff(Request $request): Response

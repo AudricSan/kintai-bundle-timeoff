@@ -159,8 +159,9 @@ final class AdminTimeoffController
             $userId,
             'timeoff_approved',
             'notif_timeoff_added_body',
-            [],
-            (int) ($saved['id'] ?? 0)
+            $this->timeoffReplace($type, $startDate, $endDate),
+            (int) ($saved['id'] ?? 0),
+            '/employee/timeoff'
         );
 
         return Response::redirect($this->base() . '/admin/timeoff?success=created');
@@ -179,8 +180,9 @@ final class AdminTimeoffController
             (int) $req['user_id'],
             'timeoff_approved',
             'notif_timeoff_approved_body',
-            [],
-            (int) $req['id']
+            $this->timeoffReplace($req['type'] ?? '', $req['start_date'] ?? '', $req['end_date'] ?? ''),
+            (int) $req['id'],
+            '/employee/timeoff'
         );
         return Response::redirect($this->base() . '/admin/timeoff?success=approved');
     }
@@ -198,8 +200,9 @@ final class AdminTimeoffController
             (int) $req['user_id'],
             'timeoff_refused',
             'notif_timeoff_refused_body',
-            [],
-            (int) $req['id']
+            $this->timeoffReplace($req['type'] ?? '', $req['start_date'] ?? '', $req['end_date'] ?? ''),
+            (int) $req['id'],
+            '/employee/timeoff'
         );
         return Response::redirect($this->base() . '/admin/timeoff?success=refused');
     }
@@ -227,5 +230,15 @@ final class AdminTimeoffController
         $this->timeoffRequests->delete((int) $req['id']);
 
         return Response::redirect($this->base() . '/admin/timeoff?success=deleted');
+    }
+
+    /** Valeurs de remplacement (:type/:start/:end) pour les notifications de congé. */
+    private function timeoffReplace(string $type, string $startDate, string $endDate): array
+    {
+        return [
+            'type'  => __($type),
+            'start' => $startDate,
+            'end'   => $endDate,
+        ];
     }
 }
