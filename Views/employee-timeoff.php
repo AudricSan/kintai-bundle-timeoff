@@ -84,7 +84,7 @@ ob_start();
         ->column('', function($r) use ($BASE_URL) {
             $status = $r['status'] ?? 'pending';
             if ($status !== 'pending') return '';
-            return '<form method="POST" action="' . $BASE_URL . '/employee/timeoff/' . (int) $r['id'] . '/cancel" class="form-inline" onsubmit="return confirm(\'' . __('confirm_cancel_request') . '\')">'
+            return '<form method="POST" action="' . $BASE_URL . '/employee/timeoff/' . (int) $r['id'] . '/cancel" class="form-inline" data-confirm="' . htmlspecialchars(__('confirm_cancel_request'), ENT_QUOTES) . '">'
                 . csrf_field()
                 . Button::make(__('cancel'))->ghost()->sm()->submit()->render()
                 . '</form>';
