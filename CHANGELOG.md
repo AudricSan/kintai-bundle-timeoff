@@ -8,6 +8,10 @@ Le schéma de version (X.Y.Z, canaux alpha/beta/main) est décrit dans
 
 ## [Unreleased]
 
+### Fixed
+
+- Sécurité — `POST /api/v1/timeoff-requests` fusionnait le JSON brut du client dans `save()`, qui fait un upsert dès qu'un `id` est présent. La route de création étant en libre-service (`self => user_id`), un employé pouvait poster `status: approved` (auto-approbation), `processed_by`, un `store_id` qui n'est pas le sien, ou un `id` pour écraser la demande d'un collègue. Seuls `start_date`, `end_date`, `type` et `reason` sont lus ; `user_id` est celui de l'appelant (ou un tiers si `timeoff.create` sur le magasin), le statut initial est toujours `pending`, et l'appelant doit être membre du magasin. `PUT` ne modifie plus que les dates, le type, le motif, le statut et la note, et enregistre qui a traité la demande et quand ; `user_id` et `store_id` ne changent jamais. **Nécessite** Kintai Core avec `StoreUserRepositoryInterface` (déjà présent).
+
 ### Changed
 
 - Compatibilité avec la Content-Security-Policy stricte de Kintai (`script-src 'self' 'nonce-…'`, sans `'unsafe-inline'`) : l'attribut d'événement inline des vues (`onclick=`/`onchange=`/`onsubmit=`/`oninput=`) est remplacé par des attributs `data-*` (`data-on-click`, `data-submit-on-change`, `data-confirm`… gérés par `csp-actions.js` du Core). Sans ce changement, les boutons, sélecteurs et confirmations de ces vues ne font plus rien sous la nouvelle politique, sans aucune erreur visible. **Nécessite Kintai Core 0.3.0 ou plus** (`kintai_core.min`), version qui introduit `csp-actions.js` et la CSP à nonce. `tests.yml` échoue désormais si un handler inline, un lien `javascript:` ou un `<script>` sans nonce réapparaît dans `Views/` ou `src/`.
