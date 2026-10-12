@@ -1,4 +1,8 @@
 {
+    "error_timeoff_invalid_date": "Enter a valid date (YYYY-MM-DD).",
+    "error_timeoff_end_before_start": "The end date cannot be before the start date.",
+    "error_timeoff_no_store": "This employee is not a member of any store.",
+    "error_timeoff_store_not_member": "The employee is not a member of the selected store.",
     "bundle_timeoff": "Time Off",
     "bundle_timeoff_desc": "Employee leave requests: submission, approval, tracking.",
     "confirm_delete_timeoff": "Permanently delete this leave?",

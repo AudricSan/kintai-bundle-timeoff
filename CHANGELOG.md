@@ -10,6 +10,7 @@ Le schéma de version (X.Y.Z, canaux alpha/beta/main) est décrit dans
 
 ### Fixed
 
+- Sécurité / intégrité — approuver ou refuser une demande de congé ignorait son statut : un gérant pouvait ressusciter une demande annulée par l'employé ou ré-approuver (double notification). Seule une demande en attente se décide. Les dates sont validées (format AAAA-MM-JJ, fin ≥ début) côté employé et gérant. Un employé multi-magasins choisit le magasin de sa demande (sélecteur) au lieu d'être rattaché à son premier magasin ; un gérant qui crée un congé pour un employé obtient son propre magasin au lieu d'un 403 ; un employé sans magasin ne peut plus déposer de demande (`store_id = 0`).
 - Sécurité — `POST /api/v1/timeoff-requests` fusionnait le JSON brut du client dans `save()`, qui fait un upsert dès qu'un `id` est présent. La route de création étant en libre-service (`self => user_id`), un employé pouvait poster `status: approved` (auto-approbation), `processed_by`, un `store_id` qui n'est pas le sien, ou un `id` pour écraser la demande d'un collègue. Seuls `start_date`, `end_date`, `type` et `reason` sont lus ; `user_id` est celui de l'appelant (ou un tiers si `timeoff.create` sur le magasin), le statut initial est toujours `pending`, et l'appelant doit être membre du magasin. `PUT` ne modifie plus que les dates, le type, le motif, le statut et la note, et enregistre qui a traité la demande et quand ; `user_id` et `store_id` ne changent jamais. **Nécessite** Kintai Core avec `StoreUserRepositoryInterface` (déjà présent).
 
 ### Changed
