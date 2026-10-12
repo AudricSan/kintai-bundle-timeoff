@@ -6,6 +6,7 @@ use kintai\UI\Components\Table;
 
 /** @var array[] $requests   timeoff_requests */
 /** @var string  $today      Y-m-d */
+/** @var array[] $stores     Magasins de l'employé [['id' => int, 'name' => string], ...] */
 
 $today = date('Y-m-d');
 
@@ -25,7 +26,7 @@ $typeLabels = [
 <?= \kintai\UI\Components\Flash::fromQuery('success', [
     'created' => __('timeoff_request_sent'), 'cancelled' => __('timeoff_cancelled'),
 ])->render() ?>
-<?= \kintai\UI\Components\Flash::fromQuery('error', ['not_pending' => __('error_not_pending')])->render() ?>
+<?= \kintai\UI\Components\Flash::fromQuery('error', ['not_pending' => __('error_not_pending'), 'invalid_state' => __('action_impossible')])->render() ?>
 
 <!-- Formulaire création -->
 <?php
@@ -33,6 +34,16 @@ ob_start();
 ?>
 <form method="POST" action="<?= route_url('employee.timeoff') ?>" class="timeoff-form">
     <?= csrf_field() ?>
+    <?php if (count($stores ?? []) > 1): ?>
+        <div class="timeoff-form__date">
+            <label class="form-label" for="to_store"><?= __('store') ?></label>
+            <select id="to_store" name="store_id" class="form-control">
+                <?php foreach ($stores as $_s): ?>
+                    <option value="<?= (int) $_s['id'] ?>"><?= htmlspecialchars((string) $_s['name']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+    <?php endif; ?>
     <div class="timeoff-form__date">
         <label class="form-label" for="to_type"><?= __('type') ?></label>
         <select id="to_type" name="type" class="form-control" required>

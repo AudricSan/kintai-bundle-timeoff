@@ -39,6 +39,7 @@ echo Flash::fromQuery('success', [
     'created'  => __('timeoff_created_admin'),
     'deleted'  => __('timeoff_deleted'),
 ])->render();
+echo Flash::fromQuery('error', ['invalid_state' => __('action_impossible')])->render();
 ?>
 <div class="page-header">
     <h2 class="page-header__title"><?= __('timeoff_requests') ?> <span class="page-count">(<?= count($requests) ?>)</span></h2>

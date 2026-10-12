@@ -1,4 +1,8 @@
 {
+    "error_timeoff_invalid_date": "Saisissez une date valide (AAAA-MM-JJ).",
+    "error_timeoff_end_before_start": "La date de fin ne peut pas précéder la date de début.",
+    "error_timeoff_no_store": "Cet employé n’est membre d’aucun magasin.",
+    "error_timeoff_store_not_member": "L’employé n’est pas membre du magasin choisi.",
     "bundle_timeoff": "Congés",
     "bundle_timeoff_desc": "Demandes d'absence des employés : soumission, approbation, suivi.",
     "confirm_delete_timeoff": "Supprimer définitivement ce congé ?",

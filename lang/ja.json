@@ -1,4 +1,8 @@
 {
+    "error_timeoff_invalid_date": "有効な日付（YYYY-MM-DD）を入力してください。",
+    "error_timeoff_end_before_start": "終了日は開始日より前にできません。",
+    "error_timeoff_no_store": "この従業員はどの店舗にも所属していません。",
+    "error_timeoff_store_not_member": "選択した店舗に従業員は所属していません。",
     "bundle_timeoff": "休暇申請",
     "bundle_timeoff_desc": "従業員の休暇申請：提出・承認・追跡。",
     "confirm_delete_timeoff": "この休暇を完全に削除しますか？",
