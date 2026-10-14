@@ -12,7 +12,7 @@ use kintai\Core\Exceptions\ForbiddenException;
 use kintai\Core\Exceptions\NotFoundException;
 use kintai\Core\Repositories\RoleAssignmentRepositoryInterface;
 use kintai\Core\Repositories\RoleRepositoryInterface;
-use kintai\Core\Repositories\TimeoffRequestRepositoryInterface;
+use kintai\Bundles\Installed\TimeOff\Repositories\TimeoffRequestRepositoryInterface;
 use kintai\Core\Request;
 use kintai\Core\Services\AuditLogger;
 use PHPUnit\Framework\MockObject\MockObject;

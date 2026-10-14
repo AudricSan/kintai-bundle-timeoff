@@ -9,7 +9,7 @@ use kintai\Contract\Exceptions\NotFoundException;
 use kintai\Contract\Exceptions\ValidationException;
 use kintai\Contract\Data\StoreRepositoryInterface;
 use kintai\Contract\Data\StoreUserRepositoryInterface;
-use kintai\Core\Repositories\TimeoffRequestRepositoryInterface;
+use kintai\Bundles\Installed\TimeOff\Repositories\TimeoffRequestRepositoryInterface;
 use kintai\Contract\Data\UserRepositoryInterface;
 use kintai\Contract\Http\Request;
 use kintai\Contract\Http\Response;
@@ -146,8 +146,8 @@ final class AdminTimeoffController
             'end_date'    => $endDate,
             'reason'      => $reason,
             'status'      => 'approved',
-            'reviewed_by' => $authUser['id'] ?? null,
-            'reviewed_at' => date('Y-m-d H:i:s'),
+            'processed_by' => $authUser['id'] ?? null,
+            'processed_at' => date('Y-m-d H:i:s'),
         ]);
 
         $this->auditLogger->log($request, 'timeoff.created_by_admin', 'timeoff_request', (int) ($saved['id'] ?? 0), [

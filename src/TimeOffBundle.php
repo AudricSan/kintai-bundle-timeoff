@@ -6,20 +6,22 @@ namespace kintai\Bundles\Installed\TimeOff;
 
 use kintai\Bundles\Installed\TimeOff\Providers\PendingTimeoffProvider;
 use kintai\Bundles\Installed\TimeOff\Providers\TimeoffAbsenceProvider;
+use kintai\Bundles\Installed\TimeOff\Repositories\DatabaseTimeoffRequestRepository;
+use kintai\Bundles\Installed\TimeOff\Repositories\TimeoffRequestRepositoryInterface;
+use kintai\Bundles\Installed\TimeOff\Services\PendingTimeoffWidget;
 use kintai\Contract\Bundle;
 use kintai\Contract\Container;
+use kintai\Contract\Extension\DashboardStat;
+use kintai\Contract\Extension\DashboardWidget;
 use kintai\Contract\Extension\NavItem;
 use kintai\Contract\Extension\StoreFeature;
 
 /**
- * Contrairement aux autres bundles, TimeOff n'enregistre pas son propre
- * repository : TimeoffRequestRepositoryInterface reste un service Core
- * (RepositoryServiceProvider), car StoreStatsService, ShiftService,
- * AdminShiftController, IcalController et HomeController en dépendent tous
- * pour des calculs qui doivent continuer de fonctionner même si ce bundle
- * est désactivé ou désinstallé. Désactiver "timeoff" retire uniquement l'UI
- * de gestion des congés (créer/approuver/consulter une demande), pas les
- * données elles-mêmes.
+ * Le bundle possède son modèle, son dépôt et sa table (timeoff_requests). Ce qu'il apporte au Core passe par ses
+ * déclarations : navigation, permissions, fonctionnalité par magasin, demandes en attente, absences (planning,
+ * export iCal, statistiques), widgets et carte « Congés en attente » des tableaux de bord, notifications. Désactiver
+ * ou désinstaller « timeoff » retire tout cela (le Core ne voit alors plus aucun congé) ; la table et ses données
+ * restent.
  */
 final class TimeOffBundle extends Bundle
 {
@@ -45,6 +47,7 @@ final class TimeOffBundle extends Bundle
 
     public function register(): void
     {
+        $this->app->container()->singleton(TimeoffRequestRepositoryInterface::class, fn() => new DatabaseTimeoffRequestRepository());
         $this->loadViewsFrom($this->getPath() . '/Views', 'timeoff');
         $this->loadRoutesFrom($this->getPath() . '/routes.php');
         $this->loadAssetsFrom('public');
@@ -92,5 +95,47 @@ final class TimeOffBundle extends Bundle
     public function absenceProviders(): array
     {
         return [new TimeoffAbsenceProvider(Container::getInstance())];
+    }
+
+    /**
+     * Widget « Congés en attente » des tableaux de bord gérant et employé (contrat 1.4). La clé « pending_timeoff » est
+     * celle du widget que le Core affichait jusqu'ici : les préférences des utilisateurs sont conservées.
+     */
+    public function dashboardWidgets(): array
+    {
+        $widget = static fn(): PendingTimeoffWidget => Container::getInstance()->make(PendingTimeoffWidget::class);
+
+        return [
+            new DashboardWidget('pending_timeoff', DashboardWidget::MANAGER, 'widget_pending_timeoff', 'timeoff::widgets.dashboard-manager',
+                static fn(array $ctx): array => $widget()->forManager(array_map('intval', $ctx['store_ids'] ?? [])),
+                permission: 'timeoff.view', storeFeature: 'timeoff'),
+            new DashboardWidget('pending_timeoff', DashboardWidget::EMPLOYEE, 'my_pending_timeoff', 'timeoff::widgets.dashboard-employee',
+                static fn(array $ctx): array => ['pending_timeoff' => $widget()->forEmployee((int) ($ctx['user']['id'] ?? 0))],
+                storeFeature: 'timeoff'),
+        ];
+    }
+
+    /**
+     * Carte « Congés en attente » du tableau de bord employé (contrat 1.19) : ses demandes en attente.
+     */
+    public function dashboardStats(): array
+    {
+        return [
+            new DashboardStat('pending_timeoff', 'pending_timeoff',
+                static fn(array $ctx): int => count(Container::getInstance()->make(PendingTimeoffWidget::class)->forEmployee((int) ($ctx['user']['id'] ?? 0))),
+                '🌴', 'warning', 'timeoff', 10),
+        ];
+    }
+
+    /**
+     * Types de notification (contrat 1.7).
+     */
+    public function notificationTypes(): array
+    {
+        return [
+            'timeoff_approved'  => '✓',
+            'timeoff_refused'   => '✗',
+            'timeoff_submitted' => '🏖',
+        ];
     }
 }

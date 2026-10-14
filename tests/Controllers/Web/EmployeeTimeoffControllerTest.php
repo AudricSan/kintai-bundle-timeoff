@@ -9,7 +9,7 @@ use kintai\Bundles\Installed\TimeOff\Controllers\Web\EmployeeTimeoffController;
 use kintai\Core\Exceptions\ForbiddenException;
 use kintai\Core\Repositories\StoreRepositoryInterface;
 use kintai\Core\Repositories\StoreUserRepositoryInterface;
-use kintai\Core\Repositories\TimeoffRequestRepositoryInterface;
+use kintai\Bundles\Installed\TimeOff\Repositories\TimeoffRequestRepositoryInterface;
 use kintai\Core\Request;
 use kintai\Core\Services\AuditLogger;
 use kintai\UI\ViewRenderer;

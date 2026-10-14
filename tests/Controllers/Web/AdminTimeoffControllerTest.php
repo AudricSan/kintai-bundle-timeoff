@@ -9,7 +9,7 @@ use kintai\Bundles\Installed\TimeOff\Controllers\Web\AdminTimeoffController;
 use kintai\Core\Exceptions\ForbiddenException;
 use kintai\Core\Repositories\StoreRepositoryInterface;
 use kintai\Core\Repositories\StoreUserRepositoryInterface;
-use kintai\Core\Repositories\TimeoffRequestRepositoryInterface;
+use kintai\Bundles\Installed\TimeOff\Repositories\TimeoffRequestRepositoryInterface;
 use kintai\Core\Repositories\UserRepositoryInterface;
 use kintai\Core\Request;
 use kintai\Core\Services\AuditLogger;
@@ -108,6 +108,10 @@ final class AdminTimeoffControllerTest extends TestCase
         $this->assertSame(3, $captured['store_id']);
         $this->assertSame('2026-08-01', $captured['start_date']);
         $this->assertSame('2026-08-03', $captured['end_date']);
+        // Colonnes de traitement de la migration (reviewed_* n'existent pas sur une installation neuve : erreur 500).
+        $this->assertSame(1, $captured['processed_by']);
+        $this->assertArrayHasKey('processed_at', $captured);
+        $this->assertArrayNotHasKey('reviewed_by', $captured);
     }
 
     public function testStoreTimeoffForEmployeeForbiddenWhenEmployeeNotManaged(): void

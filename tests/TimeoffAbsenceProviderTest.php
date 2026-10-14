@@ -6,7 +6,7 @@ namespace kintai\Tests\Bundles\TimeOff;
 
 use kintai\Bundles\Installed\TimeOff\Providers\TimeoffAbsenceProvider;
 use kintai\Core\Container;
-use kintai\Core\Repositories\TimeoffRequestRepositoryInterface;
+use kintai\Bundles\Installed\TimeOff\Repositories\TimeoffRequestRepositoryInterface;
 use PHPUnit\Framework\TestCase;
 
 /** Fournisseur d'absences du bundle (contrat 1.10) : mêmes lignes que la lecture historique de la table par le Core. */

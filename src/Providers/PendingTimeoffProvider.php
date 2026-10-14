@@ -7,7 +7,7 @@ namespace kintai\Bundles\Installed\TimeOff\Providers;
 use kintai\Contract\Container;
 use kintai\Contract\Provider\PendingRequest;
 use kintai\Contract\Provider\PendingRequestsProvider;
-use kintai\Core\Repositories\TimeoffRequestRepositoryInterface;
+use kintai\Bundles\Installed\TimeOff\Repositories\TimeoffRequestRepositoryInterface;
 
 /**
  * Demandes de congé en attente, pour la page « Demandes » et le compteur du tableau de bord du Core (contrat 1.9).

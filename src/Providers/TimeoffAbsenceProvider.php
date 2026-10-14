@@ -7,7 +7,7 @@ namespace kintai\Bundles\Installed\TimeOff\Providers;
 use kintai\Contract\Container;
 use kintai\Contract\Provider\Absence;
 use kintai\Contract\Provider\AbsenceProvider;
-use kintai\Core\Repositories\TimeoffRequestRepositoryInterface;
+use kintai\Bundles\Installed\TimeOff\Repositories\TimeoffRequestRepositoryInterface;
 
 /**
  * Absences (demandes de congé, tous statuts) pour le planning, l'export iCal et les statistiques du Core
