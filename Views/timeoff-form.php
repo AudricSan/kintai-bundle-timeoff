@@ -1,5 +1,5 @@
 <?php
-use kintai\UI\Components\Button;
+use kintai\Contract\View\Components\Button;
 
 /** @var array[] $users */
 /** @var string  $today */

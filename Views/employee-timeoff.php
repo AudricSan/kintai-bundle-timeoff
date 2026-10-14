@@ -1,8 +1,8 @@
 <?php
-use kintai\UI\Components\Badge;
-use kintai\UI\Components\Button;
-use kintai\UI\Components\Card;
-use kintai\UI\Components\Table;
+use kintai\Contract\View\Components\Badge;
+use kintai\Contract\View\Components\Button;
+use kintai\Contract\View\Components\Card;
+use kintai\Contract\View\Components\Table;
 
 /** @var array[] $requests   timeoff_requests */
 /** @var string  $today      Y-m-d */
@@ -23,10 +23,10 @@ $typeLabels = [
     <h2 class="page-header__title"><?= __('my_timeoff') ?></h2>
 </div>
 
-<?= \kintai\UI\Components\Flash::fromQuery('success', [
+<?= \kintai\Contract\View\Components\Flash::fromQuery('success', [
     'created' => __('timeoff_request_sent'), 'cancelled' => __('timeoff_cancelled'),
 ])->render() ?>
-<?= \kintai\UI\Components\Flash::fromQuery('error', ['not_pending' => __('error_not_pending'), 'invalid_state' => __('action_impossible')])->render() ?>
+<?= \kintai\Contract\View\Components\Flash::fromQuery('error', ['not_pending' => __('error_not_pending'), 'invalid_state' => __('action_impossible')])->render() ?>
 
 <!-- Formulaire création -->
 <?php
