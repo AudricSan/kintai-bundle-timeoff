@@ -8,6 +8,10 @@ Le schéma de version (X.Y.Z, canaux alpha/beta/main) est décrit dans
 
 ## [Unreleased]
 
+### Added
+
+- Socle de tests PHPUnit (composer.json, phpunit.xml) et CI qui l'exécute contre le vrai Core : les tests que le Core faisait tourner sur une copie figée du bundle (fixtures 1.0.0) vivent désormais ici et testent le code réel.
+
 ### Fixed
 
 - Sécurité / intégrité — approuver ou refuser une demande de congé ignorait son statut : un gérant pouvait ressusciter une demande annulée par l'employé ou ré-approuver (double notification). Seule une demande en attente se décide. Les dates sont validées (format AAAA-MM-JJ, fin ≥ début) côté employé et gérant. Un employé multi-magasins choisit le magasin de sa demande (sélecteur) au lieu d'être rattaché à son premier magasin ; un gérant qui crée un congé pour un employé obtient son propre magasin au lieu d'un 403 ; un employé sans magasin ne peut plus déposer de demande (`store_id = 0`).
