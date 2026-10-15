@@ -2,7 +2,7 @@
     "slug": "timeoff",
     "name": "Congés",
     "version": "1.2.0",
-    "description": "Créer, approuver et consulter des demandes de congés.",
+    "description": "Demandes d'absence des employés : soumission, approbation, suivi.",
     "author": {
         "name": "AudricSan",
         "url": "https://github.com/AudricSan"
