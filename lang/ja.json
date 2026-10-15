@@ -1,4 +1,5 @@
 {
+    "timeoff_processed_by": ":name が :date に処理",
     "action_impossible": "操作を実行できません。",
     "audit_timeoff_approved": "休暇承認",
     "audit_timeoff_cancelled": "休暇キャンセル",

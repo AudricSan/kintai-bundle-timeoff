@@ -178,8 +178,9 @@ final class AdminTimeoffController
         if (($req['status'] ?? '') !== 'pending') {
             return Response::redirect($this->base() . '/admin/timeoff?error=invalid_state');
         }
-        $this->timeoffRequests->save(array_merge($req, ['status' => 'approved']));
-        $this->auditLogger->logUpdate($request, 'timeoff.approved', 'timeoff_request', (int) $req['id'], $req, array_merge($req, ['status' => 'approved']), [], (int) ($req['store_id'] ?? 0) ?: null);
+        $decided = $this->decision($request, $req, 'approved');
+        $this->timeoffRequests->save($decided);
+        $this->auditLogger->logUpdate($request, 'timeoff.approved', 'timeoff_request', (int) $req['id'], $req, $decided, [], (int) ($req['store_id'] ?? 0) ?: null);
         $this->notifs->notify(
             (int) $req['user_id'],
             'timeoff_approved',
@@ -201,8 +202,9 @@ final class AdminTimeoffController
         if (($req['status'] ?? '') !== 'pending') {
             return Response::redirect($this->base() . '/admin/timeoff?error=invalid_state');
         }
-        $this->timeoffRequests->save(array_merge($req, ['status' => 'refused']));
-        $this->auditLogger->logUpdate($request, 'timeoff.refused', 'timeoff_request', (int) $req['id'], $req, array_merge($req, ['status' => 'refused']), [], (int) ($req['store_id'] ?? 0) ?: null);
+        $decided = $this->decision($request, $req, 'refused');
+        $this->timeoffRequests->save($decided);
+        $this->auditLogger->logUpdate($request, 'timeoff.refused', 'timeoff_request', (int) $req['id'], $req, $decided, [], (int) ($req['store_id'] ?? 0) ?: null);
         $this->notifs->notify(
             (int) $req['user_id'],
             'timeoff_refused',
@@ -212,6 +214,22 @@ final class AdminTimeoffController
             '/employee/timeoff'
         );
         return Response::redirect($this->base() . '/admin/timeoff?success=refused');
+    }
+
+    /**
+     * Demande décidée : nouveau statut, avec qui l'a traitée et quand (comme l'API et « Ajouter un congé »).
+     *
+     * @param array<string, mixed> $req
+     * @return array<string, mixed>
+     */
+    private function decision(Request $request, array $req, string $status): array
+    {
+        $authUser = (array) ($request->getAttribute('auth_user') ?? []);
+        return array_merge($req, [
+            'status'       => $status,
+            'processed_by' => isset($authUser['id']) ? (int) $authUser['id'] : null,
+            'processed_at' => date('Y-m-d H:i:s'),
+        ]);
     }
 
     /**
