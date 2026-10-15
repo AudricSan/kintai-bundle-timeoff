@@ -20,6 +20,7 @@ Le schéma de version (X.Y.Z, canaux alpha/beta/main) est décrit dans
 
 ### Fixed
 
+- API en libre-service (audit n°8 de Kintai) : un employé sans permission lit enfin ses propres demandes de congé avec `GET /api/v1/timeoff-requests?user_id=<son id>`. La liste lui était toujours renvoyée vide : le filtrage par permission retirait aussi ses propres éléments. Il ne voit jamais ceux des autres ; un gérant garde exactement sa vue. Nouveau test `ApiSelfServiceListTest`.
 - Approuver ou refuser un congé depuis le web enregistre désormais qui l'a fait et quand (`processed_by`, `processed_at`), comme l'API et « Ajouter un congé » ; la liste des congés du gérant l'affiche sous le statut (« Traité par … le … »). Les demandes traitées auparavant depuis le web restent sans ces informations.
 - Description de `bundle.json` alignée sur celle de `lang/fr.json`, pour que le catalogue et la page Bundles affichent le même texte.
 - Sécurité / intégrité — approuver ou refuser une demande de congé ignorait son statut : un gérant pouvait ressusciter une demande annulée par l'employé ou ré-approuver (double notification). Seule une demande en attente se décide. Les dates sont validées (format AAAA-MM-JJ, fin ≥ début) côté employé et gérant. Un employé multi-magasins choisit le magasin de sa demande (sélecteur) au lieu d'être rattaché à son premier magasin ; un gérant qui crée un congé pour un employé obtient son propre magasin au lieu d'un 403 ; un employé sans magasin ne peut plus déposer de demande (`store_id = 0`).
