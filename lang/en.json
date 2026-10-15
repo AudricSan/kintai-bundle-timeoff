@@ -1,4 +1,5 @@
 {
+    "timeoff_processed_by": "Handled by :name on :date",
     "action_impossible": "Action impossible.",
     "audit_timeoff_approved": "Time-off approved",
     "audit_timeoff_cancelled": "Time-off cancelled",

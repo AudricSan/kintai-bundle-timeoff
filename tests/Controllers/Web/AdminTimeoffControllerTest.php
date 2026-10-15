@@ -315,4 +315,40 @@ final class AdminTimeoffControllerTest extends TestCase
         }
         file_put_contents($file, $content);
     }
+
+    /** @return array<string, mixed>|null Demande enregistrée par la décision */
+    private function decide(string $action): ?array
+    {
+        $req = new Request();
+        $req->setAttribute('managed_store_ids', null);
+        $req->setAttribute('auth_user', ['id' => 3]);
+        $req->setRouteParams(['id' => '5']);
+        $this->timeoffRequests->method('findById')->with(5)->willReturn(['id' => 5, 'store_id' => 1, 'user_id' => 9, 'status' => 'pending', 'type' => 'sick', 'start_date' => '2026-08-01', 'end_date' => '2026-08-01']);
+        $saved = null;
+        $this->timeoffRequests->method('save')->willReturnCallback(function (array $d) use (&$saved): array {
+            $saved = $d;
+            return $d;
+        });
+
+        $this->controller->{$action}($req);
+        return $saved;
+    }
+
+    public function testApprovingRecordsWhoHandledTheRequestAndWhen(): void
+    {
+        $saved = $this->decide('approveTimeoff');
+
+        $this->assertSame('approved', $saved['status']);
+        $this->assertSame(3, $saved['processed_by']);
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $saved['processed_at']);
+    }
+
+    public function testRefusingRecordsWhoHandledTheRequestAndWhen(): void
+    {
+        $saved = $this->decide('refuseTimeoff');
+
+        $this->assertSame('refused', $saved['status']);
+        $this->assertSame(3, $saved['processed_by']);
+        $this->assertNotEmpty($saved['processed_at']);
+    }
 }

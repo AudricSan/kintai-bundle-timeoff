@@ -1,4 +1,5 @@
 {
+    "timeoff_processed_by": "Traité par :name le :date",
     "action_impossible": "Action impossible.",
     "audit_timeoff_approved": "Congé approuvé",
     "audit_timeoff_cancelled": "Congé annulé",
