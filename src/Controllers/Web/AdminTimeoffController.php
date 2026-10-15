@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace kintai\Bundles\Installed\TimeOff\Controllers\Web;
 
-use kintai\Core\Exceptions\ForbiddenException;
-use kintai\Core\Exceptions\NotFoundException;
-use kintai\Core\Exceptions\ValidationException;
-use kintai\Core\Repositories\StoreRepositoryInterface;
-use kintai\Core\Repositories\StoreUserRepositoryInterface;
-use kintai\Core\Repositories\TimeoffRequestRepositoryInterface;
-use kintai\Core\Repositories\UserRepositoryInterface;
-use kintai\Core\Request;
-use kintai\Core\Response;
-use kintai\Core\Services\AuditLogger;
-use kintai\Core\Services\NotificationService;
-use kintai\UI\Controller\Web\HasAdminAccess;
-use kintai\UI\ViewRenderer;
+use kintai\Contract\Exceptions\ForbiddenException;
+use kintai\Contract\Exceptions\NotFoundException;
+use kintai\Contract\Exceptions\ValidationException;
+use kintai\Contract\Data\StoreRepositoryInterface;
+use kintai\Contract\Data\StoreUserRepositoryInterface;
+use kintai\Bundles\Installed\TimeOff\Repositories\TimeoffRequestRepositoryInterface;
+use kintai\Contract\Data\UserRepositoryInterface;
+use kintai\Contract\Http\Request;
+use kintai\Contract\Http\Response;
+use kintai\Contract\Services\AuditLogger;
+use kintai\Contract\Services\NotificationService;
+use kintai\Contract\Http\Concerns\HasAdminAccess;
+use kintai\Contract\View\ViewRenderer;
 
 final class AdminTimeoffController
 {
@@ -146,8 +146,8 @@ final class AdminTimeoffController
             'end_date'    => $endDate,
             'reason'      => $reason,
             'status'      => 'approved',
-            'reviewed_by' => $authUser['id'] ?? null,
-            'reviewed_at' => date('Y-m-d H:i:s'),
+            'processed_by' => $authUser['id'] ?? null,
+            'processed_at' => date('Y-m-d H:i:s'),
         ]);
 
         $this->auditLogger->log($request, 'timeoff.created_by_admin', 'timeoff_request', (int) ($saved['id'] ?? 0), [
@@ -178,8 +178,9 @@ final class AdminTimeoffController
         if (($req['status'] ?? '') !== 'pending') {
             return Response::redirect($this->base() . '/admin/timeoff?error=invalid_state');
         }
-        $this->timeoffRequests->save(array_merge($req, ['status' => 'approved']));
-        $this->auditLogger->logUpdate($request, 'timeoff.approved', 'timeoff_request', (int) $req['id'], $req, array_merge($req, ['status' => 'approved']), [], (int) ($req['store_id'] ?? 0) ?: null);
+        $decided = $this->decision($request, $req, 'approved');
+        $this->timeoffRequests->save($decided);
+        $this->auditLogger->logUpdate($request, 'timeoff.approved', 'timeoff_request', (int) $req['id'], $req, $decided, [], (int) ($req['store_id'] ?? 0) ?: null);
         $this->notifs->notify(
             (int) $req['user_id'],
             'timeoff_approved',
@@ -201,8 +202,9 @@ final class AdminTimeoffController
         if (($req['status'] ?? '') !== 'pending') {
             return Response::redirect($this->base() . '/admin/timeoff?error=invalid_state');
         }
-        $this->timeoffRequests->save(array_merge($req, ['status' => 'refused']));
-        $this->auditLogger->logUpdate($request, 'timeoff.refused', 'timeoff_request', (int) $req['id'], $req, array_merge($req, ['status' => 'refused']), [], (int) ($req['store_id'] ?? 0) ?: null);
+        $decided = $this->decision($request, $req, 'refused');
+        $this->timeoffRequests->save($decided);
+        $this->auditLogger->logUpdate($request, 'timeoff.refused', 'timeoff_request', (int) $req['id'], $req, $decided, [], (int) ($req['store_id'] ?? 0) ?: null);
         $this->notifs->notify(
             (int) $req['user_id'],
             'timeoff_refused',
@@ -212,6 +214,22 @@ final class AdminTimeoffController
             '/employee/timeoff'
         );
         return Response::redirect($this->base() . '/admin/timeoff?success=refused');
+    }
+
+    /**
+     * Demande décidée : nouveau statut, avec qui l'a traitée et quand (comme l'API et « Ajouter un congé »).
+     *
+     * @param array<string, mixed> $req
+     * @return array<string, mixed>
+     */
+    private function decision(Request $request, array $req, string $status): array
+    {
+        $authUser = (array) ($request->getAttribute('auth_user') ?? []);
+        return array_merge($req, [
+            'status'       => $status,
+            'processed_by' => isset($authUser['id']) ? (int) $authUser['id'] : null,
+            'processed_at' => date('Y-m-d H:i:s'),
+        ]);
     }
 
     /**

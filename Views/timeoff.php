@@ -1,9 +1,9 @@
 <?php
-use kintai\UI\Components\Badge;
-use kintai\UI\Components\Button;
-use kintai\UI\Components\FilterBar;
-use kintai\UI\Components\Flash;
-use kintai\UI\Components\Table;
+use kintai\Contract\View\Components\Badge;
+use kintai\Contract\View\Components\Button;
+use kintai\Contract\View\Components\FilterBar;
+use kintai\Contract\View\Components\Flash;
+use kintai\Contract\View\Components\Table;
 
 /** @var array  $requests */
 /** @var array  $users_map */
@@ -69,9 +69,18 @@ echo Flash::fromQuery('error', ['invalid_state' => __('action_impossible')])->re
     ->sortable(__('type'), 'type', fn($r) => htmlspecialchars($r['type'] ?? ''))
     ->sortable(__('from'), 'date', fn($r) => htmlspecialchars($r['start_date'] ?? ''))
     ->column(__('to'), fn($r) => htmlspecialchars($r['end_date'] ?? ''))
-    ->sortable(__('status'), 'status', function($r) use ($statusLabels) {
+    ->sortable(__('status'), 'status', function($r) use ($statusLabels, $users_map) {
         $st = $r['status'] ?? 'pending';
-        return Badge::make($statusLabels[$st] ?? $st)->status($st)->render();
+        $html = Badge::make($statusLabels[$st] ?? $st)->status($st)->render();
+        // Qui a traité la demande, et quand (vide pour une demande traitée avant cet enregistrement).
+        $by = (int) ($r['processed_by'] ?? 0);
+        if ($by > 0 && !empty($r['processed_at'])) {
+            $html .= '<div class="text-sm text-muted">' . htmlspecialchars(__('timeoff_processed_by', [
+                'name' => $users_map[$by] ?? ('ID ' . $by),
+                'date' => substr((string) $r['processed_at'], 0, 10),
+            ])) . '</div>';
+        }
+        return $html;
     })
     ->column(__('reason'), fn($r) => '<span class="td-reason">' . htmlspecialchars($r['reason'] ?? '—') . '</span>')
     ->column(__('actions'), function($r) use ($BASE_URL) {
