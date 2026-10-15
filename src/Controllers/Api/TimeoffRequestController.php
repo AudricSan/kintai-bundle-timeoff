@@ -58,7 +58,15 @@ final class TimeoffRequestController
             $items = [];
         }
 
-        $items = $this->permissions->restrictToScope($this->authUser($request), 'timeoff.view', $items);
+        // Éléments couverts par la permission, PLUS ceux de l'appelant : un employé sans timeoff.view lit les siens avec
+        // ?user_id=<lui> (règle self de la route). Avant, restrictToScope() vidait toujours sa liste.
+        $authUser  = $this->authUser($request);
+        $authId    = (int) ($authUser['id'] ?? 0);
+        $scopedIds = array_column($this->permissions->restrictToScope($authUser, 'timeoff.view', $items), 'id');
+        $items     = array_values(array_filter(
+            $items,
+            fn(array $i): bool => in_array($i['id'] ?? null, $scopedIds, true) || (int) ($i['user_id'] ?? 0) === $authId,
+        ));
 
         return Response::json(Paginator::paginate($items, $page, $limit));
     }
