@@ -16,6 +16,7 @@ use kintai\Bundles\Installed\TimeOff\Repositories\TimeoffRequestRepositoryInterf
 use kintai\Core\Request;
 use kintai\Core\Services\AuditLogger;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -29,7 +30,7 @@ final class TimeoffRequestControllerTest extends TestCase
     private RoleAssignmentRepositoryInterface&MockObject $assignments;
     private RoleRepositoryInterface&MockObject $roles;
     private TimeoffRequestController $controller;
-    private StoreUserRepositoryInterface&MockObject $storeUsers;
+    private StoreUserRepositoryInterface&Stub $storeUsers;
 
     protected function setUp(): void
     {
@@ -40,7 +41,7 @@ final class TimeoffRequestControllerTest extends TestCase
             $this->timeoffRequests,
             new AuditLogger(),
             new PermissionService($this->assignments, $this->roles),
-            $this->storeUsers = $this->createMock(StoreUserRepositoryInterface::class)
+            $this->storeUsers = $this->createStub(StoreUserRepositoryInterface::class)
         );
     }
 

@@ -19,7 +19,7 @@ final class TimeoffAbsenceProviderTest extends TestCase
             ['id' => 2, 'user_id' => 5, 'store_id' => 2, 'start_date' => '2026-10-03', 'end_date' => '2026-10-03', 'type' => 'sick', 'status' => 'pending'],
             ['id' => 3, 'user_id' => 4, 'store_id' => 2, 'start_date' => '2026-10-09', 'end_date' => '2026-10-08', 'type' => 'sick', 'status' => 'pending'],
         ];
-        $repo = $this->createMock(TimeoffRequestRepositoryInterface::class);
+        $repo = $this->createStub(TimeoffRequestRepositoryInterface::class);
         $repo->method('findByUser')->willReturnCallback(fn(int $u) => array_values(array_filter($rows, fn($r) => $r['user_id'] === $u)));
         $repo->method('findByStore')->willReturnCallback(fn(int $s) => array_values(array_filter($rows, fn($r) => $r['store_id'] === $s)));
         $repo->method('findAll')->willReturn($rows);

@@ -14,14 +14,15 @@ use kintai\Core\Request;
 use kintai\Core\Services\AuditLogger;
 use kintai\UI\ViewRenderer;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 
 final class EmployeeTimeoffControllerTest extends TestCase
 {
-    private TimeoffRequestRepositoryInterface&MockObject $timeoffRequests;
-    private StoreRepositoryInterface&MockObject $stores;
-    private StoreUserRepositoryInterface&MockObject $storeUsers;
-    private EmployeeTimeoffController $controller;
+    private TimeoffRequestRepositoryInterface&Stub $timeoffRequests;
+    private StoreRepositoryInterface&Stub $stores;
+    private StoreUserRepositoryInterface&Stub $storeUsers;
+    private ?EmployeeTimeoffController $controller = null;
 
     protected function setUp(): void
     {
@@ -29,26 +30,34 @@ final class EmployeeTimeoffControllerTest extends TestCase
         $this->ensureViewFile($viewDir, 'employee-timeoff');
         $this->ensureViewFile(sys_get_temp_dir(), 'layout.app');
 
-        $view = new ViewRenderer(sys_get_temp_dir());
-        $view->addNamespace('timeoff', $viewDir);
+        $this->timeoffRequests = $this->createStub(TimeoffRequestRepositoryInterface::class);
+        $this->stores = $this->createStub(StoreRepositoryInterface::class);
+        $this->storeUsers = $this->createStub(StoreUserRepositoryInterface::class);
+    }
 
-        $this->timeoffRequests = $this->createMock(TimeoffRequestRepositoryInterface::class);
-        $this->stores = $this->createMock(StoreRepositoryInterface::class);
-        $this->storeUsers = $this->createMock(StoreUserRepositoryInterface::class);
+    /** Objet testé, construit à la première utilisation : un test peut d'abord remplacer un bouchon par un mock. */
+    private function controller(): EmployeeTimeoffController
+    {
+        if ($this->controller === null) {
+            $viewDir = sys_get_temp_dir() . '/kintai-timeoff-views';
+            $view = new ViewRenderer(sys_get_temp_dir());
+            $view->addNamespace('timeoff', $viewDir);
+            $this->controller = new EmployeeTimeoffController(
+                $view,
+                $this->timeoffRequests,
+                $this->stores,
+                $this->storeUsers,
+                new AuditLogger(),
+                $this->createStub(\kintai\Core\Repositories\UserRepositoryInterface::class),
+                $this->createStub(\kintai\Core\Services\NotificationService::class),
+                new \kintai\Core\Auth\PermissionService(
+                    $this->createStub(\kintai\Core\Repositories\RoleAssignmentRepositoryInterface::class),
+                    $this->createStub(\kintai\Core\Repositories\RoleRepositoryInterface::class),
+                ),
+            );
+        }
 
-        $this->controller = new EmployeeTimeoffController(
-            $view,
-            $this->timeoffRequests,
-            $this->stores,
-            $this->storeUsers,
-            new AuditLogger(),
-            $this->createMock(\kintai\Core\Repositories\UserRepositoryInterface::class),
-            $this->createMock(\kintai\Core\Services\NotificationService::class),
-            new \kintai\Core\Auth\PermissionService(
-                $this->createMock(\kintai\Core\Repositories\RoleAssignmentRepositoryInterface::class),
-                $this->createMock(\kintai\Core\Repositories\RoleRepositoryInterface::class),
-            ),
-        );
+        return $this->controller;
     }
 
     protected function tearDown(): void
@@ -59,35 +68,42 @@ final class EmployeeTimeoffControllerTest extends TestCase
 
     public function testTimeoffRendersListForEmployee(): void
     {
-        $this->storeUsers->method('findByUser')->with(9)->willReturn([['store_id' => 1, 'user_id' => 9]]);
-        $this->stores->method('getFeatures')->with(1)->willReturn([]);
-        $this->timeoffRequests->method('findByUser')->with(9)->willReturn([]);
+        $this->timeoffRequests = $this->createMock(TimeoffRequestRepositoryInterface::class);
+        $this->stores = $this->createMock(StoreRepositoryInterface::class);
+        $this->storeUsers = $this->createMock(StoreUserRepositoryInterface::class);
+        $this->storeUsers->expects($this->atLeastOnce())->method('findByUser')->with(9)->willReturn([['store_id' => 1, 'user_id' => 9]]);
+        $this->stores->expects($this->atLeastOnce())->method('getFeatures')->with(1)->willReturn([]);
+        $this->timeoffRequests->expects($this->atLeastOnce())->method('findByUser')->with(9)->willReturn([]);
 
         $req = new Request();
         $req->setAttribute('auth_user', ['id' => 9]);
 
-        $response = $this->controller->timeoff($req);
+        $response = $this->controller()->timeoff($req);
 
         $this->assertSame(200, $response->status());
     }
 
     public function testTimeoffRedirectsWhenFeatureDisabledForStore(): void
     {
-        $this->storeUsers->method('findByUser')->with(9)->willReturn([['store_id' => 1, 'user_id' => 9]]);
-        $this->stores->method('getFeatures')->with(1)->willReturn(['shifts', 'timeclock']);
+        $this->stores = $this->createMock(StoreRepositoryInterface::class);
+        $this->storeUsers = $this->createMock(StoreUserRepositoryInterface::class);
+        $this->storeUsers->expects($this->atLeastOnce())->method('findByUser')->with(9)->willReturn([['store_id' => 1, 'user_id' => 9]]);
+        $this->stores->expects($this->atLeastOnce())->method('getFeatures')->with(1)->willReturn(['shifts', 'timeclock']);
 
         $req = new Request();
         $req->setAttribute('auth_user', ['id' => 9]);
 
-        $response = $this->controller->timeoff($req);
+        $response = $this->controller()->timeoff($req);
 
         $this->assertSame(302, $response->status());
     }
 
     public function testStoreTimeoffCreatesPendingRequest(): void
     {
-        $this->storeUsers->method('findByUser')->with(9)->willReturn([['store_id' => 1, 'user_id' => 9]]);
-        $this->stores->method('getFeatures')->with(1)->willReturn([]);
+        $this->stores = $this->createMock(StoreRepositoryInterface::class);
+        $this->storeUsers = $this->createMock(StoreUserRepositoryInterface::class);
+        $this->storeUsers->expects($this->atLeastOnce())->method('findByUser')->with(9)->willReturn([['store_id' => 1, 'user_id' => 9]]);
+        $this->stores->expects($this->atLeastOnce())->method('getFeatures')->with(1)->willReturn([]);
 
         $_POST = ['type' => 'sick', 'start_date' => '2026-08-01', 'end_date' => '2026-08-02', 'reason' => 'Grippe'];
         $req = new Request();
@@ -99,7 +115,7 @@ final class EmployeeTimeoffControllerTest extends TestCase
             return $d + ['id' => 7];
         });
 
-        $response = $this->controller->storeTimeoff($req);
+        $response = $this->controller()->storeTimeoff($req);
 
         $this->assertSame(302, $response->status());
         $this->assertNotNull($captured);
@@ -111,8 +127,11 @@ final class EmployeeTimeoffControllerTest extends TestCase
     /** Audit du 13/10/2026 : les dates étaient enregistrées telles quelles, sans aucun contrôle. */
     public function testStoreTimeoffRejectsInvalidDates(): void
     {
-        $this->storeUsers->method('findByUser')->with(9)->willReturn([['store_id' => 1, 'user_id' => 9]]);
-        $this->stores->method('getFeatures')->with(1)->willReturn([]);
+        $this->timeoffRequests = $this->createMock(TimeoffRequestRepositoryInterface::class);
+        $this->stores = $this->createMock(StoreRepositoryInterface::class);
+        $this->storeUsers = $this->createMock(StoreUserRepositoryInterface::class);
+        $this->storeUsers->expects($this->atLeastOnce())->method('findByUser')->with(9)->willReturn([['store_id' => 1, 'user_id' => 9]]);
+        $this->stores->expects($this->atLeastOnce())->method('getFeatures')->with(1)->willReturn([]);
         $this->timeoffRequests->expects($this->never())->method('save');
 
         $_POST = ['type' => 'sick', 'start_date' => 'pas-une-date', 'end_date' => ''];
@@ -120,13 +139,16 @@ final class EmployeeTimeoffControllerTest extends TestCase
         $req->setAttribute('auth_user', ['id' => 9]);
 
         $this->expectException(\kintai\Core\Exceptions\ValidationException::class);
-        $this->controller->storeTimeoff($req);
+        $this->controller()->storeTimeoff($req);
     }
 
     public function testStoreTimeoffRejectsEndBeforeStart(): void
     {
-        $this->storeUsers->method('findByUser')->with(9)->willReturn([['store_id' => 1, 'user_id' => 9]]);
-        $this->stores->method('getFeatures')->with(1)->willReturn([]);
+        $this->timeoffRequests = $this->createMock(TimeoffRequestRepositoryInterface::class);
+        $this->stores = $this->createMock(StoreRepositoryInterface::class);
+        $this->storeUsers = $this->createMock(StoreUserRepositoryInterface::class);
+        $this->storeUsers->expects($this->atLeastOnce())->method('findByUser')->with(9)->willReturn([['store_id' => 1, 'user_id' => 9]]);
+        $this->stores->expects($this->atLeastOnce())->method('getFeatures')->with(1)->willReturn([]);
         $this->timeoffRequests->expects($this->never())->method('save');
 
         $_POST = ['type' => 'sick', 'start_date' => '2026-08-05', 'end_date' => '2026-08-01'];
@@ -134,12 +156,14 @@ final class EmployeeTimeoffControllerTest extends TestCase
         $req->setAttribute('auth_user', ['id' => 9]);
 
         $this->expectException(\kintai\Core\Exceptions\ValidationException::class);
-        $this->controller->storeTimeoff($req);
+        $this->controller()->storeTimeoff($req);
     }
 
     public function testStoreTimeoffUsesTheChosenStoreWhenMember(): void
     {
-        $this->storeUsers->method('findByUser')->with(9)->willReturn([
+        $this->timeoffRequests = $this->createMock(TimeoffRequestRepositoryInterface::class);
+        $this->storeUsers = $this->createMock(StoreUserRepositoryInterface::class);
+        $this->storeUsers->expects($this->atLeastOnce())->method('findByUser')->with(9)->willReturn([
             ['store_id' => 1, 'user_id' => 9], ['store_id' => 4, 'user_id' => 9],
         ]);
         $this->stores->method('getFeatures')->willReturn([]);
@@ -152,12 +176,14 @@ final class EmployeeTimeoffControllerTest extends TestCase
             fn(array $d) => $d['store_id'] === 4 && $d['end_date'] === '2026-08-01'
         ))->willReturn(['id' => 7]);
 
-        $this->assertSame(302, $this->controller->storeTimeoff($req)->status());
+        $this->assertSame(302, $this->controller()->storeTimeoff($req)->status());
     }
 
     public function testStoreTimeoffRefusesAStoreTheEmployeeDoesNotBelongTo(): void
     {
-        $this->storeUsers->method('findByUser')->with(9)->willReturn([['store_id' => 1, 'user_id' => 9]]);
+        $this->timeoffRequests = $this->createMock(TimeoffRequestRepositoryInterface::class);
+        $this->storeUsers = $this->createMock(StoreUserRepositoryInterface::class);
+        $this->storeUsers->expects($this->atLeastOnce())->method('findByUser')->with(9)->willReturn([['store_id' => 1, 'user_id' => 9]]);
         $this->stores->method('getFeatures')->willReturn([]);
         $this->timeoffRequests->expects($this->never())->method('save');
 
@@ -166,37 +192,39 @@ final class EmployeeTimeoffControllerTest extends TestCase
         $req->setAttribute('auth_user', ['id' => 9]);
 
         $this->expectException(\kintai\Core\Exceptions\ValidationException::class);
-        $this->controller->storeTimeoff($req);
+        $this->controller()->storeTimeoff($req);
     }
 
     public function testCancelTimeoffOnlyAllowsOwnerOfPendingRequest(): void
     {
+        $this->timeoffRequests = $this->createMock(TimeoffRequestRepositoryInterface::class);
         $req = new Request();
         $req->setAttribute('auth_user', ['id' => 9]);
         $req->setRouteParams(['id' => '5']);
 
-        $this->timeoffRequests->method('findById')->with(5)->willReturn([
+        $this->timeoffRequests->expects($this->atLeastOnce())->method('findById')->with(5)->willReturn([
             'id' => 5, 'user_id' => 9, 'status' => 'pending',
         ]);
         $this->timeoffRequests->expects($this->once())->method('save')->willReturnCallback(fn(array $d) => $d);
 
-        $response = $this->controller->cancelTimeoff($req);
+        $response = $this->controller()->cancelTimeoff($req);
 
         $this->assertSame(302, $response->status());
     }
 
     public function testCancelTimeoffForbiddenForAnotherUsersRequest(): void
     {
+        $this->timeoffRequests = $this->createMock(TimeoffRequestRepositoryInterface::class);
         $req = new Request();
         $req->setAttribute('auth_user', ['id' => 9]);
         $req->setRouteParams(['id' => '5']);
 
-        $this->timeoffRequests->method('findById')->with(5)->willReturn([
+        $this->timeoffRequests->expects($this->atLeastOnce())->method('findById')->with(5)->willReturn([
             'id' => 5, 'user_id' => 42, 'status' => 'pending',
         ]);
 
         $this->expectException(ForbiddenException::class);
-        $this->controller->cancelTimeoff($req);
+        $this->controller()->cancelTimeoff($req);
     }
 
     private function ensureViewFile(string $dir, string $view): void
