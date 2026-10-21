@@ -132,10 +132,12 @@ final class TimeOffBundle extends Bundle
      */
     public function notificationTypes(): array
     {
+        // Format enrichi (contrat 1.23) : catégorie, canaux par défaut, objet désigné par l'id passé à notify().
+        // Les décisions arrivent aussi par e-mail ; la demande à traiter reste une notification push.
         return [
-            'timeoff_approved'  => '✓',
-            'timeoff_refused'   => '✗',
-            'timeoff_submitted' => '🏖',
+            'timeoff_approved'  => ['icon' => '✓', 'category' => 'requests', 'channels' => ['push' => true, 'email' => true], 'reference_type' => 'timeoff'],
+            'timeoff_refused'   => ['icon' => '✗', 'category' => 'requests', 'channels' => ['push' => true, 'email' => true], 'reference_type' => 'timeoff'],
+            'timeoff_submitted' => ['icon' => '🏖', 'category' => 'requests', 'channels' => ['push' => true, 'email' => false], 'reference_type' => 'timeoff'],
         ];
     }
 }

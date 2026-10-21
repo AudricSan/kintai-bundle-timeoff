@@ -54,8 +54,14 @@ final class EmployeeTimeoffController
             }
         }
 
+        // L'employé voit ses demandes : les notifications de décision correspondantes sont lues.
+        if ($userId > 0 && $requests !== []) {
+            $this->notifs->markReadFor($userId, 'timeoff', array_map(fn($r) => (int) ($r['id'] ?? 0), $requests));
+        }
+
         return Response::html($this->view->render('timeoff::employee-timeoff', [
             'title'    => 'Mes congés',
+            'highlight_id' => (int) $request->query('highlight', 0),
             'requests' => $requests,
             'stores'   => $stores,
         ], 'layout.app'));
@@ -184,7 +190,7 @@ final class EmployeeTimeoffController
             'notif_timeoff_submitted_body',
             ['author' => $authorName, 'type' => __($type), 'start' => $startDate, 'end' => $endDate],
             $referenceId,
-            '/admin/timeoff'
+            '/admin/timeoff?highlight=' . $referenceId
         );
     }
 

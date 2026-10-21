@@ -96,7 +96,20 @@ final class ContractDeclarationsTest extends TestCase
 
     public function testNotificationTypes(): void
     {
-        $this->assertSame(['timeoff_approved' => '✓', 'timeoff_refused' => '✗', 'timeoff_submitted' => '🏖'], $this->bundle()->notificationTypes());
+        $declared = $this->bundle()->notificationTypes();
+        $this->assertSame(['timeoff_approved', 'timeoff_refused', 'timeoff_submitted'], array_keys($declared));
+
+        // Chaque déclaration est valide pour le Core (format enrichi du contrat 1.23).
+        $types = [];
+        foreach ($declared as $type => $declaration) {
+            $types[$type] = \kintai\Contract\Extension\NotificationType::fromDeclaration($type, $declaration);
+            $this->assertSame('requests', $types[$type]->category);
+            $this->assertSame('timeoff', $types[$type]->referenceType);
+            $this->assertTrue($types[$type]->push);
+        }
+        $this->assertTrue($types['timeoff_approved']->email, 'les décisions arrivent aussi par e-mail');
+        $this->assertTrue($types['timeoff_refused']->email);
+        $this->assertFalse($types['timeoff_submitted']->email);
     }
 
     /** Le bundle n'apporte rien d'autre au Core. */

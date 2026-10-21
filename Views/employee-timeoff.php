@@ -5,6 +5,7 @@ use kintai\Contract\View\Components\Card;
 use kintai\Contract\View\Components\Table;
 
 /** @var array[] $requests   timeoff_requests */
+/** @var int     $highlight_id demande désignée par une notification (0 = aucune) */
 /** @var string  $today      Y-m-d */
 /** @var array[] $stores     Magasins de l'employé [['id' => int, 'name' => string], ...] */
 
@@ -77,6 +78,7 @@ ob_start();
     else: ?>
     <?= Table::make()
         ->data($requests)
+        ->rowAttrs(fn($r) => (int) ($highlight_id ?? 0) > 0 && (int) ($r['id'] ?? 0) === (int) $highlight_id ? ['class' => 'tr--highlight'] : [])
         ->column(__('type'), fn($r) => htmlspecialchars(($typeLabels[$r['type'] ?? ''] ?? ($r['type'] ?? '—'))))
         ->column(__('start'), fn($r) => htmlspecialchars($r['start_date'] ?? '—'))
         ->column(__('end'), fn($r) => htmlspecialchars($r['end_date'] ?? '—'))

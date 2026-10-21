@@ -74,8 +74,15 @@ final class AdminTimeoffController
             };
         });
 
+        // Le gestionnaire voit les demandes : les notifications « à traiter » correspondantes sont lues.
+        $viewerId = (int) (($request->getAttribute('auth_user')['id'] ?? 0));
+        if ($viewerId > 0 && $requests !== []) {
+            $this->notifs->markReadFor($viewerId, 'timeoff', array_map(fn($r) => (int) ($r['id'] ?? 0), $requests));
+        }
+
         return Response::html($this->view->render('timeoff::timeoff', [
             'title'         => 'Congés',
+            'highlight_id'  => (int) $request->query('highlight', 0),
             'requests'      => $requests,
             'users_map'     => $usersMap,
             'stores_map'    => $storesMap,
@@ -160,7 +167,7 @@ final class AdminTimeoffController
             'notif_timeoff_added_body',
             $this->timeoffReplace($type, $startDate, $endDate),
             (int) ($saved['id'] ?? 0),
-            '/employee/timeoff'
+            '/employee/timeoff?highlight=' . (int) ($saved['id'] ?? 0)
         );
 
         return Response::redirect($this->base() . '/admin/timeoff?success=created');
@@ -187,7 +194,7 @@ final class AdminTimeoffController
             'notif_timeoff_approved_body',
             $this->timeoffReplace($req['type'] ?? '', $req['start_date'] ?? '', $req['end_date'] ?? ''),
             (int) $req['id'],
-            '/employee/timeoff'
+            '/employee/timeoff?highlight=' . (int) $req['id']
         );
         return Response::redirect($this->base() . '/admin/timeoff?success=approved');
     }
@@ -211,7 +218,7 @@ final class AdminTimeoffController
             'notif_timeoff_refused_body',
             $this->timeoffReplace($req['type'] ?? '', $req['start_date'] ?? '', $req['end_date'] ?? ''),
             (int) $req['id'],
-            '/employee/timeoff'
+            '/employee/timeoff?highlight=' . (int) $req['id']
         );
         return Response::redirect($this->base() . '/admin/timeoff?success=refused');
     }

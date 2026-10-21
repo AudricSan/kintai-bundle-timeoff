@@ -6,6 +6,7 @@ use kintai\Contract\View\Components\Flash;
 use kintai\Contract\View\Components\Table;
 
 /** @var array  $requests */
+/** @var int    $highlight_id demande désignée par une notification (0 = aucune) */
 /** @var array  $users_map */
 /** @var array  $stores_map */
 /** @var string $sort */
@@ -57,6 +58,7 @@ echo Flash::fromQuery('error', ['invalid_state' => __('action_impossible')])->re
 <div class="card card--filters mb-sm">
 <?= Table::make()
     ->data($requests)
+    ->rowAttrs(fn($r) => (int) ($highlight_id ?? 0) > 0 && (int) ($r['id'] ?? 0) === (int) $highlight_id ? ['class' => 'tr--highlight'] : [])
     ->emptyMessage(__('no_timeoff_found'))
     ->currentSort($sort)
     ->filters(['type' => $type_filter, 'status' => $status_filter])
