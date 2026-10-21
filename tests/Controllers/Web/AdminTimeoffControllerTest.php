@@ -109,7 +109,7 @@ final class AdminTimeoffControllerTest extends TestCase
         });
 
         $this->notifs->expects($this->once())->method('notify')
-            ->with(5, 'timeoff_approved', $this->isString(), $this->anything(), 99);
+            ->with(5, 'timeoff_approved', $this->isString(), $this->anything(), 99, '/employee/timeoff?highlight=99');
 
         $response = $this->controller()->storeTimeoffForEmployee($req);
 
