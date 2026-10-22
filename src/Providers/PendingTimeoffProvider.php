@@ -18,8 +18,8 @@ final class PendingTimeoffProvider implements PendingRequestsProvider
     public function __construct(private readonly Container $container) {}
 
     public function key(): string { return 'timeoff'; }
-    public function label(): string { return 'pending_timeoff'; }
-    public function emptyLabel(): string { return 'no_pending_request'; }
+    public function label(): string { return 'timeoff_pending_timeoff'; }
+    public function emptyLabel(): string { return 'timeoff_no_pending_request'; }
     public function permission(): string { return 'timeoff.view'; }
     public function storeFeature(): ?string { return 'timeoff'; }
     public function order(): int { return 10; }
