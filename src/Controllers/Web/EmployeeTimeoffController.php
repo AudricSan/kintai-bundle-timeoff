@@ -129,14 +129,14 @@ final class EmployeeTimeoffController
     {
         $storeIds = $this->memberStoreIds($userId);
         if ($storeIds === []) {
-            throw new ValidationException(['store_id' => __('error_timeoff_no_store')]);
+            throw new ValidationException(['store_id' => __('timeoff_error_no_store')]);
         }
         $requested = is_numeric($requested) ? (int) $requested : 0;
         if ($requested <= 0) {
             return $storeIds[0];
         }
         if (!in_array($requested, $storeIds, true)) {
-            throw new ValidationException(['store_id' => __('error_timeoff_store_not_member')]);
+            throw new ValidationException(['store_id' => __('timeoff_error_store_not_member')]);
         }
         return $requested;
     }
@@ -157,10 +157,10 @@ final class EmployeeTimeoffController
         $startDate = $parse($start);
         $endDate   = ($end === null || trim((string) $end) === '') ? $startDate : $parse($end);
         if ($startDate === null || $endDate === null) {
-            throw new ValidationException(['start_date' => __('error_timeoff_invalid_date')]);
+            throw new ValidationException(['start_date' => __('timeoff_error_invalid_date')]);
         }
         if ($endDate < $startDate) {
-            throw new ValidationException(['end_date' => __('error_timeoff_end_before_start')]);
+            throw new ValidationException(['end_date' => __('timeoff_error_end_before_start')]);
         }
         return [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')];
     }
@@ -201,7 +201,7 @@ final class EmployeeTimeoffController
 
         $req = $this->timeoffRequests->findById((int) $request->param('id'));
         if ($req === null || (int) $req['user_id'] !== $userId) {
-            throw new ForbiddenException(__('error_request_not_found'));
+            throw new ForbiddenException(__('timeoff_error_request_not_found'));
         }
         if (($req['status'] ?? '') !== 'pending') {
             return Response::redirect($this->base() . '/employee/timeoff?error=not_pending');

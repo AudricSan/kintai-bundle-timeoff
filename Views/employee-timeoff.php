@@ -21,13 +21,13 @@ $typeLabels = [
 <?php endif; ?>
 
 <div class="page-header">
-    <h2 class="page-header__title"><?= __('my_timeoff') ?></h2>
+    <h2 class="page-header__title"><?= __('timeoff_my_timeoff') ?></h2>
 </div>
 
 <?= \kintai\Contract\View\Components\Flash::fromQuery('success', [
     'created' => __('timeoff_request_sent'), 'cancelled' => __('timeoff_cancelled'),
 ])->render() ?>
-<?= \kintai\Contract\View\Components\Flash::fromQuery('error', ['not_pending' => __('error_not_pending'), 'invalid_state' => __('action_impossible')])->render() ?>
+<?= \kintai\Contract\View\Components\Flash::fromQuery('error', ['not_pending' => __('timeoff_error_not_pending'), 'invalid_state' => __('timeoff_action_impossible')])->render() ?>
 
 <!-- Formulaire création -->
 <?php
@@ -62,8 +62,8 @@ ob_start();
         <input id="to_end" type="date" name="end_date" class="form-control" value="<?= $today ?>">
     </div>
     <div class="timeoff-form__grow">
-        <label class="form-label" for="to_reason"><?= __('reason') ?> (<?= __('optional') ?? 'optionnel' ?>)</label>
-        <input id="to_reason" type="text" name="reason" class="form-control" placeholder="<?= __('reason_placeholder') ?>">
+        <label class="form-label" for="to_reason"><?= __('reason') ?> (<?= __('timeoff_optional') ?? 'optionnel' ?>)</label>
+        <input id="to_reason" type="text" name="reason" class="form-control" placeholder="<?= __('timeoff_reason_placeholder') ?>">
     </div>
     <div>
         <?= Button::make(__('send') ?? 'Envoyer')->primary()->submit()->render() ?>
@@ -74,7 +74,7 @@ ob_start();
 <!-- Liste des demandes -->
 <div class="card">
     <?php if (empty($requests)):
-        echo '<p class="empty-state">' . __('no_pending_timeoff') . '</p>';
+        echo '<p class="empty-state">' . __('timeoff_no_pending_timeoff') . '</p>';
     else: ?>
     <?= Table::make()
         ->data($requests)
@@ -93,11 +93,11 @@ ob_start();
                 default     => htmlspecialchars($status),
             })->status($status)->render();
         })
-        ->column(__('sent_at'), fn($r) => '<span class="text-sm-muted">' . htmlspecialchars(substr($r['created_at'] ?? '', 0, 10)) . '</span>')
+        ->column(__('timeoff_sent_at'), fn($r) => '<span class="text-sm-muted">' . htmlspecialchars(substr($r['created_at'] ?? '', 0, 10)) . '</span>')
         ->column('', function($r) use ($BASE_URL) {
             $status = $r['status'] ?? 'pending';
             if ($status !== 'pending') return '';
-            return '<form method="POST" action="' . $BASE_URL . '/employee/timeoff/' . (int) $r['id'] . '/cancel" class="form-inline" data-confirm="' . htmlspecialchars(__('confirm_cancel_request'), ENT_QUOTES) . '">'
+            return '<form method="POST" action="' . $BASE_URL . '/employee/timeoff/' . (int) $r['id'] . '/cancel" class="form-inline" data-confirm="' . htmlspecialchars(__('timeoff_confirm_cancel_request'), ENT_QUOTES) . '">'
                 . csrf_field()
                 . Button::make(__('cancel'))->ghost()->sm()->submit()->render()
                 . '</form>';

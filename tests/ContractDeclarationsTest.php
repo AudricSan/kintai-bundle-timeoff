@@ -32,7 +32,7 @@ final class ContractDeclarationsTest extends TestCase
 
         $this->assertCount(1, $items);
         $this->assertInstanceOf(NavItem::class, $items[0]);
-        $this->assertSame(['timeoff', NavItem::REQUESTS, 'timeoff', 'admin.timeoff', 'employee.timeoff', 'leaf', 'my_timeoff'],
+        $this->assertSame(['timeoff', NavItem::REQUESTS, 'timeoff', 'admin.timeoff', 'employee.timeoff', 'leaf', 'timeoff_my_timeoff'],
             [$items[0]->key, $items[0]->section, $items[0]->label, $items[0]->managerRoute, $items[0]->employeeRoute, $items[0]->icon, $items[0]->employeeLabel]);
         $this->assertSame(['/admin/timeoff', '/employee/timeoff'], $items[0]->activePaths);
         $this->assertSame('timeoff', $items[0]->storeFeature);
@@ -51,7 +51,7 @@ final class ContractDeclarationsTest extends TestCase
 
         $this->assertCount(1, $features);
         $this->assertInstanceOf(StoreFeature::class, $features[0]);
-        $this->assertSame(['timeoff', 'feature_timeoff', 'feature_timeoff_desc', '🏖', 30],
+        $this->assertSame(['timeoff', 'timeoff_feature_timeoff', 'timeoff_feature_desc', '🏖', 30],
             [$features[0]->key, $features[0]->label, $features[0]->description, $features[0]->icon, $features[0]->order]);
     }
 
@@ -60,7 +60,7 @@ final class ContractDeclarationsTest extends TestCase
         $pending = $this->bundle()->pendingRequestsProviders();
         $this->assertCount(1, $pending);
         $this->assertInstanceOf(PendingTimeoffProvider::class, $pending[0]);
-        $this->assertSame(['timeoff', 'pending_timeoff', 'no_pending_request', 'timeoff.view', 'timeoff', 10],
+        $this->assertSame(['timeoff', 'timeoff_pending_timeoff', 'timeoff_no_pending_request', 'timeoff.view', 'timeoff', 10],
             [$pending[0]->key(), $pending[0]->label(), $pending[0]->emptyLabel(), $pending[0]->permission(), $pending[0]->storeFeature(), $pending[0]->order()]);
 
         $absences = $this->bundle()->absenceProviders();
@@ -76,9 +76,9 @@ final class ContractDeclarationsTest extends TestCase
         $this->assertCount(2, $widgets);
         [$manager, $employee] = $widgets;
         $this->assertInstanceOf(DashboardWidget::class, $manager);
-        $this->assertSame(['pending_timeoff', DashboardWidget::MANAGER, 'widget_pending_timeoff', 'timeoff::widgets.dashboard-manager', 'timeoff.view', 'timeoff'],
+        $this->assertSame(['pending_timeoff', DashboardWidget::MANAGER, 'timeoff_widget_pending_timeoff', 'timeoff::widgets.dashboard-manager', 'timeoff.view', 'timeoff'],
             [$manager->key, $manager->audience, $manager->label, $manager->view, $manager->permission, $manager->storeFeature]);
-        $this->assertSame(['pending_timeoff', DashboardWidget::EMPLOYEE, 'my_pending_timeoff', 'timeoff::widgets.dashboard-employee', null, 'timeoff'],
+        $this->assertSame(['pending_timeoff', DashboardWidget::EMPLOYEE, 'timeoff_my_pending_timeoff', 'timeoff::widgets.dashboard-employee', null, 'timeoff'],
             [$employee->key, $employee->audience, $employee->label, $employee->view, $employee->permission, $employee->storeFeature]);
         $this->assertFileExists(dirname(__DIR__) . '/Views/widgets/dashboard-manager.php');
         $this->assertFileExists(dirname(__DIR__) . '/Views/widgets/dashboard-employee.php');
@@ -90,7 +90,7 @@ final class ContractDeclarationsTest extends TestCase
 
         $this->assertCount(1, $stats);
         $this->assertInstanceOf(DashboardStat::class, $stats[0]);
-        $this->assertSame(['pending_timeoff', 'pending_timeoff', '🌴', 'warning', 'timeoff', 10],
+        $this->assertSame(['pending_timeoff', 'timeoff_pending_timeoff', '🌴', 'warning', 'timeoff', 10],
             [$stats[0]->key, $stats[0]->label, $stats[0]->icon, $stats[0]->tone, $stats[0]->storeFeature, $stats[0]->order]);
     }
 
@@ -131,8 +131,8 @@ final class ContractDeclarationsTest extends TestCase
     /** Libellés des déclarations, des notifications, du journal d'activité et des widgets, fournis par le bundle. */
     public function testDeclaredLabelsAreTranslatedByTheBundle(): void
     {
-        $keys = ['timeoff', 'my_timeoff', 'perm_category_timeoff', 'feature_timeoff', 'feature_timeoff_desc', 'pending_timeoff',
-            'no_pending_request', 'widget_pending_timeoff', 'my_pending_timeoff', 'notif_timeoff_approved', 'notif_timeoff_refused',
+        $keys = ['timeoff', 'timeoff_my_timeoff', 'perm_category_timeoff', 'timeoff_feature_timeoff', 'timeoff_feature_desc', 'timeoff_pending_timeoff',
+            'timeoff_no_pending_request', 'timeoff_widget_pending_timeoff', 'timeoff_my_pending_timeoff', 'notif_timeoff_approved', 'notif_timeoff_refused',
             'notif_timeoff_submitted', 'audit_timeoff_created', 'audit_timeoff_cancelled', 'audit_timeoff_approved', 'audit_timeoff_refused'];
         foreach (['fr', 'en', 'ja'] as $locale) {
             $lang = json_decode((string) file_get_contents(dirname(__DIR__) . "/lang/{$locale}.json"), true);

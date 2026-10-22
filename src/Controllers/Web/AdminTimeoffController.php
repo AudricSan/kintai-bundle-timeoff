@@ -110,7 +110,7 @@ final class AdminTimeoffController
         ));
 
         return Response::html($this->view->render('timeoff::timeoff-form', [
-            'title' => __('create_timeoff'),
+            'title' => __('timeoff_create_timeoff'),
             'users' => $users,
             'today' => date('Y-m-d'),
         ], 'layout.app'));
@@ -130,7 +130,7 @@ final class AdminTimeoffController
 
         $managedIds = $this->managedIds($request);
         if ($managedIds !== null && !in_array($userId, $this->memberUserIds($managedIds), true)) {
-            throw new ForbiddenException(__('error_not_employee_manager'));
+            throw new ForbiddenException(__('timeoff_error_not_employee_manager'));
         }
 
         $storeId = $this->resolveStoreId($request, $userId);
@@ -177,7 +177,7 @@ final class AdminTimeoffController
     {
         $req = $this->timeoffRequests->findById((int) $request->param('id'));
         if ($req === null) {
-            throw new NotFoundException(__('error_request_not_found'));
+            throw new NotFoundException(__('timeoff_error_request_not_found'));
         }
         $this->assertStoreAccess($request, (int) ($req['store_id'] ?? 0));
         // Seule une demande en attente se décide : sinon un gérant ressuscitait une demande annulée
@@ -203,7 +203,7 @@ final class AdminTimeoffController
     {
         $req = $this->timeoffRequests->findById((int) $request->param('id'));
         if ($req === null) {
-            throw new NotFoundException(__('error_request_not_found'));
+            throw new NotFoundException(__('timeoff_error_request_not_found'));
         }
         $this->assertStoreAccess($request, (int) ($req['store_id'] ?? 0));
         if (($req['status'] ?? '') !== 'pending') {
@@ -247,7 +247,7 @@ final class AdminTimeoffController
     {
         $req = $this->timeoffRequests->findById((int) $request->param('id'));
         if ($req === null) {
-            throw new NotFoundException(__('error_request_not_found'));
+            throw new NotFoundException(__('timeoff_error_request_not_found'));
         }
         $this->assertStoreAccess($request, (int) ($req['store_id'] ?? 0));
 
@@ -278,12 +278,12 @@ final class AdminTimeoffController
             $this->storeUsers->findByUser($userId)
         )));
         if ($storeIds === []) {
-            throw new ValidationException(['user_id' => __('error_timeoff_no_store')]);
+            throw new ValidationException(['user_id' => __('timeoff_error_no_store')]);
         }
         $requested = (int) $request->post('store_id', 0);
         if ($requested > 0) {
             if (!in_array($requested, $storeIds, true)) {
-                throw new ValidationException(['store_id' => __('error_timeoff_store_not_member')]);
+                throw new ValidationException(['store_id' => __('timeoff_error_store_not_member')]);
             }
             return $requested;
         }
@@ -312,10 +312,10 @@ final class AdminTimeoffController
         $startDate = $parse($start);
         $endDate   = ($end === null || trim((string) $end) === '') ? $startDate : $parse($end);
         if ($startDate === null || $endDate === null) {
-            throw new ValidationException(['start_date' => __('error_timeoff_invalid_date')]);
+            throw new ValidationException(['start_date' => __('timeoff_error_invalid_date')]);
         }
         if ($endDate < $startDate) {
-            throw new ValidationException(['end_date' => __('error_timeoff_end_before_start')]);
+            throw new ValidationException(['end_date' => __('timeoff_error_end_before_start')]);
         }
         return [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')];
     }
