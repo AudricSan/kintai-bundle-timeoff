@@ -4,23 +4,40 @@ declare(strict_types=1);
 
 namespace kintai\Bundles\Installed\TimeOff\Controllers\Api;
 
-use kintai\Core\Api\Paginator;
-use kintai\Core\Auth\PermissionService;
-use kintai\Core\Repositories\TimeoffRequestRepositoryInterface;
-use kintai\Core\Request;
-use kintai\Core\Response;
-use kintai\Core\Services\AuditLogger;
+use kintai\Contract\Http\Paginator;
+use kintai\Contract\Auth\PermissionService;
+use kintai\Contract\Exceptions\ForbiddenException;
+use kintai\Contract\Exceptions\ValidationException;
+use kintai\Contract\Data\StoreUserRepositoryInterface;
+use kintai\Bundles\Installed\TimeOff\Repositories\TimeoffRequestRepositoryInterface;
+use kintai\Contract\Http\Request;
+use kintai\Contract\Http\Response;
+use kintai\Contract\Services\AuditLogger;
 
 /**
  * Régression (audit RBAC du 11/09/2026) : mêmes correctifs que
  * ShiftSwapRequestController — voir son docblock pour le détail de la faille.
+ *
+ * Régression (audit du 03/10/2026) : store() et update() fusionnaient le JSON brut du client. La
+ * route de création est en libre-service (`self => user_id`, aucune permission exigée pour soi-même),
+ * donc un employé pouvait poster `status: approved` (auto-approbation), `processed_by`, un `store_id`
+ * qui n'est pas le sien, ou un `id` pour écraser la demande d'un collègue (save() fait un upsert sur
+ * l'id). Seuls les champs de la liste blanche sont maintenant acceptés ; le statut initial est
+ * toujours `pending` et seul update() (timeoff.update sur le magasin réel) traite une demande.
  */
 final class TimeoffRequestController
 {
+    /** Champs qu'un client peut renseigner à la création (user_id, store_id, status et created_at sont imposés). */
+    private const CREATE_FIELDS = ['start_date', 'end_date', 'type', 'reason'];
+
+    /** Champs qu'un gestionnaire peut modifier ; user_id et store_id ne changent jamais. */
+    private const UPDATE_FIELDS = ['start_date', 'end_date', 'type', 'reason', 'status', 'admin_note'];
+
     public function __construct(
         private readonly TimeoffRequestRepositoryInterface $timeoffRequests,
         private readonly AuditLogger $auditLogger,
         private readonly PermissionService $permissions,
+        private readonly StoreUserRepositoryInterface $storeUsers,
     ) {}
 
     /** GET /api/v1/timeoff-requests?store_id=X&user_id=Y&status=Z&page=1&limit=20 */
@@ -41,7 +58,15 @@ final class TimeoffRequestController
             $items = [];
         }
 
-        $items = $this->permissions->restrictToScope($this->authUser($request), 'timeoff.view', $items);
+        // Éléments couverts par la permission, PLUS ceux de l'appelant : un employé sans timeoff.view lit les siens avec
+        // ?user_id=<lui> (règle self de la route). Avant, restrictToScope() vidait toujours sa liste.
+        $authUser  = $this->authUser($request);
+        $authId    = (int) ($authUser['id'] ?? 0);
+        $scopedIds = array_column($this->permissions->restrictToScope($authUser, 'timeoff.view', $items), 'id');
+        $items     = array_values(array_filter(
+            $items,
+            fn(array $i): bool => in_array($i['id'] ?? null, $scopedIds, true) || (int) ($i['user_id'] ?? 0) === $authId,
+        ));
 
         return Response::json(Paginator::paginate($items, $page, $limit));
     }
@@ -56,9 +81,30 @@ final class TimeoffRequestController
     /** POST /api/v1/timeoff-requests */
     public function store(Request $request): Response
     {
-        $data  = $request->json() ?? [];
+        $authUser = $this->authUser($request);
+        $authId   = (int) ($authUser['id'] ?? 0);
+        $body     = $request->json() ?? [];
+
+        $storeId = (int) ($body['store_id'] ?? 0);
+        if ($storeId <= 0) {
+            throw new ValidationException(['store_id' => __('error_api_store_id_required')]);
+        }
+        $userId = (int) ($body['user_id'] ?? $authId);
+
+        // Pour soi-même : membre du magasin suffit. Pour un tiers : timeoff.create sur ce magasin.
+        $forSelf = $userId === $authId && $this->storeUsers->findMembership($storeId, $authId) !== null;
+        if (!$forSelf && !$this->permissions->can($authUser, 'timeoff.create', $storeId)) {
+            throw new ForbiddenException(__('error_permission_insufficient', ['key' => 'timeoff.create']));
+        }
+
+        $data = array_intersect_key($body, array_flip(self::CREATE_FIELDS)) + [
+            'user_id'    => $userId,
+            'store_id'   => $storeId,
+            'status'     => 'pending',
+            'created_at' => date('Y-m-d H:i:s'),
+        ];
         $saved = $this->timeoffRequests->save($data);
-        $this->auditLogger->log($request, 'timeoff_request.created', 'timeoff_request', resourceId: (int) ($saved['id'] ?? 0) ?: null, details: $data, storeId: isset($data['store_id']) ? (int) $data['store_id'] : null);
+        $this->auditLogger->log($request, 'timeoff_request.created', 'timeoff_request', resourceId: (int) ($saved['id'] ?? 0) ?: null, details: $data, storeId: $storeId);
         return Response::json($saved, 201);
     }
 
@@ -67,9 +113,15 @@ final class TimeoffRequestController
     {
         $old = $this->requireTimeoff($request, 'timeoff.update');
         $id  = (int) $old['id'];
-        $data  = $request->json() ?? [];
-        $saved = $this->timeoffRequests->save(array_merge($data, ['id' => $id]));
-        $this->auditLogger->logUpdate($request, 'timeoff_request.updated', 'timeoff_request', resourceId: $id, oldData: $old, newData: $saved, extraContext: $data, storeId: isset($data['store_id']) ? (int) $data['store_id'] : null);
+        $data = array_intersect_key($request->json() ?? [], array_flip(self::UPDATE_FIELDS)) + ['id' => $id];
+        // Un changement de statut est un traitement : on enregistre qui l'a fait et quand.
+        if (isset($data['status'])) {
+            $data['processed_by'] = (int) ($this->authUser($request)['id'] ?? 0);
+            $data['processed_at'] = date('Y-m-d H:i:s');
+        }
+        $data['updated_at'] = date('Y-m-d H:i:s');
+        $saved = $this->timeoffRequests->save($data);
+        $this->auditLogger->logUpdate($request, 'timeoff_request.updated', 'timeoff_request', resourceId: $id, oldData: $old, newData: $saved, extraContext: $data, storeId: (int) ($old['store_id'] ?? 0) ?: null);
         return Response::json($saved);
     }
 

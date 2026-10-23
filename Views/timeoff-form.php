@@ -1,5 +1,5 @@
 <?php
-use kintai\UI\Components\Button;
+use kintai\Contract\View\Components\Button;
 
 /** @var array[] $users */
 /** @var string  $today */
@@ -11,8 +11,11 @@ $typeLabels = [
     'unpaid' => __('unpaid'), 'other' => __('other'),
 ];
 ?>
+<?php if ($timeoffCss = bundle_asset('timeoff', 'css/timeoff.css')): ?>
+<link rel="stylesheet" href="<?= $timeoffCss ?>">
+<?php endif; ?>
 <div class="page-header">
-    <h2 class="page-header__title"><?= __('create_timeoff') ?></h2>
+    <h2 class="page-header__title"><?= __('timeoff_create_timeoff') ?></h2>
     <div class="page-header__actions">
         <a href="<?= back_url($BASE_URL . '/admin/timeoff') ?>" class="btn btn--ghost">← <?= __('back') ?></a>
     </div>
@@ -49,10 +52,10 @@ $typeLabels = [
         </div>
         <div class="timeoff-form__grow">
             <label class="form-label" for="to_reason"><?= __('reason') ?></label>
-            <input id="to_reason" type="text" name="reason" class="form-control" placeholder="<?= __('reason_placeholder') ?>">
+            <input id="to_reason" type="text" name="reason" class="form-control" placeholder="<?= __('timeoff_reason_placeholder') ?>">
         </div>
         <div class="form-actions">
-            <?= Button::make(__('create_timeoff'))->primary()->submit()->render() ?>
+            <?= Button::make(__('timeoff_create_timeoff'))->primary()->submit()->render() ?>
         </div>
     </form>
 </div>
