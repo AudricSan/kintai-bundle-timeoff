@@ -83,6 +83,22 @@ final class AdminTimeoffControllerTest extends TestCase
         $this->assertSame(200, $response->status());
     }
 
+    /** Un compte supprimé (anonymisé, ligne conservée) ne doit plus être proposé dans le formulaire de congé. */
+    public function testCreateTimeoffHidesDeletedAccounts(): void
+    {
+        $this->writeViewContent(sys_get_temp_dir() . '/kintai-timeoff-views', 'timeoff-form', "<?php echo json_encode(array_map(fn(\$u) => \$u['id'], \$users));");
+        $this->writeViewContent(sys_get_temp_dir(), 'layout.app', "<?php echo \$content ?? '';");
+        $this->users->method('findAll')->willReturn([
+            ['id' => 1, 'last_name' => 'Dupont', 'first_name' => 'Jean', 'deleted_at' => null],
+            ['id' => 2, 'last_name' => '', 'first_name' => '[Supprimé]', 'deleted_at' => '2026-11-01 10:00:00'],
+        ]);
+
+        $req = new Request();
+        $req->setAttribute('managed_store_ids', null);
+
+        $this->assertSame('[1]', $this->controller()->createTimeoff($req)->body());
+    }
+
     public function testStoreTimeoffForEmployeeCreatesApprovedRequestVisibleOnCalendar(): void
     {
         $this->users = $this->createMock(UserRepositoryInterface::class);
