@@ -26,7 +26,7 @@ ob_start();
 </div>
 <?php
 echo Card::make()
-    ->header('<span>' . __('my_pending_timeoff') . '</span> ' . Button::make(__('view_all'))->ghost()->sm()->link(route_url('employee.timeoff'))->render())
+    ->header('<span>' . __('timeoff_my_pending_timeoff') . '</span> ' . Button::make(__('view_all'))->ghost()->sm()->link(route_url('employee.timeoff'))->render())
     ->body(ob_get_clean())
     ->render();
 ?>

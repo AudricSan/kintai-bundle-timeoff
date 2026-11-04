@@ -22,6 +22,7 @@ final class EmployeeTimeoffControllerTest extends TestCase
     private TimeoffRequestRepositoryInterface&Stub $timeoffRequests;
     private StoreRepositoryInterface&Stub $stores;
     private StoreUserRepositoryInterface&Stub $storeUsers;
+    private \kintai\Core\Services\NotificationService $notifs;
     private ?EmployeeTimeoffController $controller = null;
 
     protected function setUp(): void
@@ -33,6 +34,7 @@ final class EmployeeTimeoffControllerTest extends TestCase
         $this->timeoffRequests = $this->createStub(TimeoffRequestRepositoryInterface::class);
         $this->stores = $this->createStub(StoreRepositoryInterface::class);
         $this->storeUsers = $this->createStub(StoreUserRepositoryInterface::class);
+        $this->notifs = $this->createStub(\kintai\Core\Services\NotificationService::class);
     }
 
     /** Objet testé, construit à la première utilisation : un test peut d'abord remplacer un bouchon par un mock. */
@@ -49,7 +51,7 @@ final class EmployeeTimeoffControllerTest extends TestCase
                 $this->storeUsers,
                 new AuditLogger(),
                 $this->createStub(\kintai\Core\Repositories\UserRepositoryInterface::class),
-                $this->createStub(\kintai\Core\Services\NotificationService::class),
+                $this->notifs,
                 new \kintai\Core\Auth\PermissionService(
                     $this->createStub(\kintai\Core\Repositories\RoleAssignmentRepositoryInterface::class),
                     $this->createStub(\kintai\Core\Repositories\RoleRepositoryInterface::class),
@@ -81,6 +83,26 @@ final class EmployeeTimeoffControllerTest extends TestCase
         $response = $this->controller()->timeoff($req);
 
         $this->assertSame(200, $response->status());
+    }
+
+    /** Ouvrir la liste marque comme lues les notifications des demandes affichées. */
+    public function testTimeoffMarksTheNotificationsOfTheDisplayedRequestsAsRead(): void
+    {
+        $this->timeoffRequests = $this->createMock(TimeoffRequestRepositoryInterface::class);
+        $this->stores = $this->createMock(StoreRepositoryInterface::class);
+        $this->storeUsers = $this->createMock(StoreUserRepositoryInterface::class);
+        $this->notifs = $this->createMock(\kintai\Core\Services\NotificationService::class);
+        $this->storeUsers->method('findByUser')->willReturn([['store_id' => 1, 'user_id' => 9]]);
+        $this->stores->method('getFeatures')->willReturn([]);
+        $this->timeoffRequests->method('findByUser')->with(9)->willReturn([
+            ['id' => 4, 'created_at' => '2026-01-01'], ['id' => 7, 'created_at' => '2026-02-01'],
+        ]);
+        $this->notifs->expects($this->once())->method('markReadFor')->with(9, 'timeoff', [7, 4]);
+
+        $req = new Request();
+        $req->setAttribute('auth_user', ['id' => 9]);
+
+        $this->assertSame(200, $this->controller()->timeoff($req)->status());
     }
 
     public function testTimeoffRedirectsWhenFeatureDisabledForStore(): void

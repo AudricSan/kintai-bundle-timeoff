@@ -9,11 +9,11 @@
 ?>
 <div class="card card--mt">
     <div class="card-header">
-        <span><?= __('pending_timeoff') ?></span>
+        <span><?= __('timeoff_pending_timeoff') ?></span>
         <a href="<?= route_url('admin.timeoff') ?>" class="card-header-link"><?= __('view_all') ?></a>
     </div>
     <?php if (empty($pending_timeoff)): ?>
-        <div class="empty-state"><?= __('no_pending_request') ?></div>
+        <div class="empty-state"><?= __('timeoff_no_pending_request') ?></div>
     <?php else: ?>
         <div class="table-wrap">
             <table class="data-table" data-mob-stack>

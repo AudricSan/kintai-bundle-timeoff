@@ -8,7 +8,23 @@ Le schéma de version (X.Y.Z, canaux alpha/beta/main) est décrit dans
 
 ## [Unreleased]
 
+### Fixed
+- **Comptes supprimés** : la liste des employés du formulaire de congé posé par un admin ne propose plus un compte supprimé (anonymisé, ligne conservée comme tombstone) ; l'historique reste affiché sous le compte anonymisé.
+
+## [2.0.0] - 2026-10-23
+
+Première version stable de la ligne 2 : elle regroupe, à l'identique, tout ce qui a été publié en alpha et en bêta depuis la ligne 1 (voir les sections ci-dessous), sans changement fonctionnel propre à cette version.
+
 ### Changed
+- **Traductions conformes au contrat** : 25 clés renommées avec le préfixe du bundle (`timeoff_…`) et 7 clés redéfinies du Core supprimées (le bundle utilise celles du Core), sans changement de texte affiché ; `tests/TranslationContractTest.php` impose désormais parité fr/en/ja, préfixe, collisions et clés connues.
+
+### Added
+
+- Contrat de bundle 1.24 : `ContractUsageTest` vérifie aussi que le bundle n'appelle que des fonctions globales déclarées par le contrat (`ContractUsageScanner::functionViolations()`).
+
+### Changed
+
+- Notifications (contrat 1.23, `kintai_contract` `^1.23`) : types déclarés au format enrichi (catégorie « requests », décisions aussi par e-mail par défaut, `reference_type` `timeoff`) ; le lien d'une notification ouvre la liste avec la demande concernée en évidence (`?highlight=`) ; ouvrir la liste marque comme lues les notifications des demandes affichées.
 
 - Tests : plus aucun avis PHPUnit (30 auparavant) — les doublures sans attente sont des bouchons (`createStub()`), les mocks ne sont créés que dans les tests qui posent une attente, et les vérifications `->with()` sont conservées (`expects($this->atLeastOnce())`, ou `willReturnCallback()` par argument dans les méthodes utilitaires).
 - Extraction du Core (étape 4 du plan du contrat) : le bundle possède désormais tout son code et ses données. Le modèle `TimeoffRequest` et le dépôt `TimeoffRequestRepositoryInterface` / `DatabaseTimeoffRequestRepository` (`src/Models`, `src/Repositories`) quittent le Core ; la table `timeoff_requests` garde son nom et ses données. Une migration la crée si elle manque (installation neuve) ; une seconde renomme, sur les instances installées avec l'ancien schéma SQL, `reviewed_by` / `reviewed_at` / `review_notes` en `processed_by` / `processed_at` / `admin_note` en gardant les données (traiter une demande par l'API y échouait) ; une table déjà au bon schéma n'est pas touchée. « Ajouter un congé » (gérant) écrit désormais `processed_by` / `processed_at` : il échouait (erreur 500) sur une installation neuve. Les widgets « Congés en attente » des tableaux de bord gérant et employé (`dashboardWidgets()`, même clé `pending_timeoff` : les préférences sont conservées) et la carte « Congés en attente » du tableau de bord employé (`dashboardStats()`, contrat 1.19, `"kintai_contract": "^1.19"`) sont fournis par le bundle, ainsi que ses types de notification (`notificationTypes()`) ; côté gérant, la carte est pleine largeur comme les autres widgets de bundles (le Core la plaçait à côté des échanges) et la case du panneau « Personnaliser » n'est proposée qu'avec `timeoff.view`. Désactivé ou désinstallé, le bundle ne fournit plus de congés au Core (conflits du planning, export iCal, statistiques). Les libellés de la catégorie de permissions, de la fonctionnalité, des notifications, du journal d'activité, des widgets et des messages passent dans `lang/`. `ContractUsageTest` n'admet plus aucune classe du Core hors contrat ; `ContractDeclarationsTest` vérifie chaque déclaration valeur par valeur. Tests repris du Core (affectation de masse de l'API) ; nouveaux tests `TimeoffRequestsMigrationTest` (installation neuve, ancien schéma avec données, schéma déjà correct) et `PendingTimeoffWidgetTest`.

@@ -60,7 +60,7 @@ final class TimeOffBundle extends Bundle
     {
         return [
             new NavItem('timeoff', NavItem::REQUESTS, 'timeoff', 'admin.timeoff', 'employee.timeoff',
-                icon: 'leaf', employeeLabel: 'my_timeoff', activePaths: ['/admin/timeoff', '/employee/timeoff'],
+                icon: 'leaf', employeeLabel: 'timeoff_my_timeoff', activePaths: ['/admin/timeoff', '/employee/timeoff'],
                 storeFeature: 'timeoff', order: 10, mobile: true),
         ];
     }
@@ -78,7 +78,7 @@ final class TimeOffBundle extends Bundle
      */
     public function storeFeatures(): array
     {
-        return [new StoreFeature('timeoff', 'feature_timeoff', 'feature_timeoff_desc', '🏖', 30)];
+        return [new StoreFeature('timeoff', 'timeoff_feature_timeoff', 'timeoff_feature_desc', '🏖', 30)];
     }
 
     /**
@@ -106,10 +106,10 @@ final class TimeOffBundle extends Bundle
         $widget = static fn(): PendingTimeoffWidget => Container::getInstance()->make(PendingTimeoffWidget::class);
 
         return [
-            new DashboardWidget('pending_timeoff', DashboardWidget::MANAGER, 'widget_pending_timeoff', 'timeoff::widgets.dashboard-manager',
+            new DashboardWidget('pending_timeoff', DashboardWidget::MANAGER, 'timeoff_widget_pending_timeoff', 'timeoff::widgets.dashboard-manager',
                 static fn(array $ctx): array => $widget()->forManager(array_map('intval', $ctx['store_ids'] ?? [])),
                 permission: 'timeoff.view', storeFeature: 'timeoff'),
-            new DashboardWidget('pending_timeoff', DashboardWidget::EMPLOYEE, 'my_pending_timeoff', 'timeoff::widgets.dashboard-employee',
+            new DashboardWidget('pending_timeoff', DashboardWidget::EMPLOYEE, 'timeoff_my_pending_timeoff', 'timeoff::widgets.dashboard-employee',
                 static fn(array $ctx): array => ['pending_timeoff' => $widget()->forEmployee((int) ($ctx['user']['id'] ?? 0))],
                 storeFeature: 'timeoff'),
         ];
@@ -121,7 +121,7 @@ final class TimeOffBundle extends Bundle
     public function dashboardStats(): array
     {
         return [
-            new DashboardStat('pending_timeoff', 'pending_timeoff',
+            new DashboardStat('pending_timeoff', 'timeoff_pending_timeoff',
                 static fn(array $ctx): int => count(Container::getInstance()->make(PendingTimeoffWidget::class)->forEmployee((int) ($ctx['user']['id'] ?? 0))),
                 '🌴', 'warning', 'timeoff', 10),
         ];
@@ -132,10 +132,12 @@ final class TimeOffBundle extends Bundle
      */
     public function notificationTypes(): array
     {
+        // Format enrichi (contrat 1.23) : catégorie, canaux par défaut, objet désigné par l'id passé à notify().
+        // Les décisions arrivent aussi par e-mail ; la demande à traiter reste une notification push.
         return [
-            'timeoff_approved'  => '✓',
-            'timeoff_refused'   => '✗',
-            'timeoff_submitted' => '🏖',
+            'timeoff_approved'  => ['icon' => '✓', 'category' => 'requests', 'channels' => ['push' => true, 'email' => true], 'reference_type' => 'timeoff'],
+            'timeoff_refused'   => ['icon' => '✗', 'category' => 'requests', 'channels' => ['push' => true, 'email' => true], 'reference_type' => 'timeoff'],
+            'timeoff_submitted' => ['icon' => '🏖', 'category' => 'requests', 'channels' => ['push' => true, 'email' => false], 'reference_type' => 'timeoff'],
         ];
     }
 }
